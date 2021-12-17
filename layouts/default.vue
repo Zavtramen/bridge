@@ -11,6 +11,22 @@ import { primaryInput } from 'detect-it';
 export default Vue.extend({
     name: 'LayoutDefault',
 
+    head(): object {
+        return {
+            htmlAttrs: {
+              lang: 'en',
+              translate: 'no'
+            },
+            meta: [
+                {
+                    hid: 'google',
+                    name: 'google',
+                    content: 'notranslate'
+                }
+            ],
+        }
+    },
+
     mounted() {
         // for active/hovers on touch/mouse devices
         document.documentElement.classList.add(primaryInput === 'touch' ? 'isTouch' : 'isPointer');
