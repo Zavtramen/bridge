@@ -60,6 +60,8 @@ import { AbiItem } from 'web3-utils';
 import { httpGet, toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
+const BN = TonWeb.utils.BN;
+
 declare interface IEthToTon {
     transactionHash: string,
     logIndex: number,
@@ -126,8 +128,6 @@ declare interface IComponentData {
     state: IState,
     ethToTon: IEthToTon | null
 }
-
-const BN = TonWeb.utils.BN;
 
 export default Vue.extend({
     props: {
@@ -227,7 +227,6 @@ export default Vue.extend({
                     return (this.$t(`Bridge.networks.ton.transactionSend`) as string)
                         .replace('<AMOUNT>', String(this.amount))
                         .replace('<FROM_COIN>', this.fromCoin)
-                        .replace('<URL>', url)
                         .replace('<URL>', url);
                 } else {
                     return this.state.fromCurrencySent ?
@@ -366,7 +365,7 @@ export default Vue.extend({
             }
 
             if (this.state.step === 2 && !this.isFromTon) {
-                let blocksConfirmations = (this.provider?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
+                const blocksConfirmations = (this.provider?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
 
                 if (blocksConfirmations > this.params.blocksConfirmations) {
                     const block = await this.provider!.web3.eth.getBlock(this.state.blockNumber);
