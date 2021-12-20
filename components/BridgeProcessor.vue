@@ -643,10 +643,7 @@ export default Vue.extend({
             console.log('accountsChanged', accounts);
             const address: string = accounts[0] as string;
             if (!this.provider) {
-                this.provider = await this.initProvider();
-                if (!this.provider) {
-                    return;
-                }
+                return;
             }
             if (!(new BN(await this.provider!.web3.eth.getBalance(address)).gt(new BN('0')))) {
                 alert(this.$t(`Bridge.networks.${this.pair}.errors.lowBalance`) as string);
