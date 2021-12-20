@@ -284,7 +284,7 @@ export default Vue.extend({
             const raw = localStorage.getItem('bridgeState');
 
             if (raw) {
-                let state;
+                let state: any;
                 try {
                     state = JSON.parse(raw);
                 } catch (e) {
