@@ -1,7 +1,7 @@
 require('dotenv').config({ path: './.env.'+process.env.NODE_ENV })
 
 const i18nOptions = {
-    baseUrl: 'https://ton.org',
+    baseUrl: 'https://ton.org/bridge',
 
     locales: [
         {

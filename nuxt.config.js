@@ -9,14 +9,16 @@ export default {
 
     // Global page headers: https://go.nuxtjs.dev/config-head
     head: {
-        title: 'TON-ETH Bridge',
+        title: 'TON Bridge',
         htmlAttrs: {
-            lang: 'en'
+            lang: 'en',
+            translate: 'no'
         },
         meta: [
             { charset: 'utf-8' },
             { name: 'viewport', content: ' width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover' },
-            { hid: 'description', name: 'description', content: 'TON-ETH Bridge' },
+            { hid: 'description', name: 'description', content: 'TON Bridge' },
+            { hid: 'google', name: 'google', content: 'notranslate' },
             { name: 'format-detection', content: 'telephone=no' }
         ],
         link: [

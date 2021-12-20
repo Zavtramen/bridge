@@ -5,7 +5,7 @@ declare module "tonweb" {
         constructor(anyForm: string | Address)
         static isValid(anyForm: string | Address): boolean
         toString(isUserFriendly?: boolean, isUrlSafe?: boolean, isBounceable?: boolean, isTestOnly?: boolean): string
-        hashPart: Uint8Array,
+        hashPart: Uint8Array
         wc: number
     }
 
@@ -13,7 +13,7 @@ declare module "tonweb" {
         constructor(host?: string)
         sendImpl(apiUrl: string, request: any): Promise<any>
         send(method: string, params: any): Promise<any>
-        getAddressInfo(address: string): Promise<anyany>
+        getAddressInfo(address: string): Promise<any>
         getExtendedAddressInfo(address: string): Promise<any>
         getWalletInfo(address: string): Promise<any>
         getTransactions(address: string, limit?: number, lt?: number, hash?: string, to_lt?: number, archival?: boolean): Promise<any[]>
