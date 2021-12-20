@@ -227,7 +227,7 @@ export default Vue.extend({
                     return (this.$t(`Bridge.networks.ton.transactionSend`) as string)
                         .replace('<AMOUNT>', String(this.amount))
                         .replace('<FROM_COIN>', this.fromCoin)
-                        .replace('<URL>', url);
+                        .replace(/<URL>/g, url);
                 } else {
                     return this.state.fromCurrencySent ?
                         this.$t(`Bridge.networks.${this.pair}.transactionWait`) as string :

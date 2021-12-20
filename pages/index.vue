@@ -225,12 +225,6 @@ export default Vue.extend({
         },
         pair() {
             this.getPairGasFee__debounced();
-        },
-        amount() {
-            this.getPairGasFee__debounced();
-        },
-        toAddress() {
-            this.getPairGasFee__debounced();
         }
     },
 
@@ -296,9 +290,19 @@ export default Vue.extend({
                 } catch (e) {
                     return;
                 }
+
+                // for previous version
+                if (!state.pair) {
+                    return;
+                }
+
                 this.amount = state.amount;
                 this.toAddress = state.toAddress;
-                this.$refs.bridgeProcessor.loadState(state.processingState);
+                this.pair = state.pair;
+
+                this.$nextTick(() => {
+                    this.$refs.bridgeProcessor.loadState(state.processingState);
+                });
             }
         },
         saveState(processingState: any): void {
@@ -309,6 +313,7 @@ export default Vue.extend({
             const state = {
                 amount: this.amount,
                 toAddress: this.toAddress,
+                pair: this.pair,
                 processingState: processingState
             }
 
