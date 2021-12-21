@@ -57,6 +57,7 @@ import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
+import WalletConnect from '@walletconnect/web3-provider';
 import { httpGet, toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
@@ -313,6 +314,8 @@ export default Vue.extend({
             this.newBlockHeadersSubscription.unsubscribe();
         }
 
+
+        // TODO add WalletConnect provider
         const ethereum = window.ethereum;
 
         if (ethereum) {
@@ -365,6 +368,7 @@ export default Vue.extend({
             }
 
             if (this.state.step === 2 && !this.isFromTon) {
+                console.log(this.provider?.blockNumber, this.state.blockNumber);
                 const blocksConfirmations = (this.provider?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
 
                 if (blocksConfirmations > this.params.blocksConfirmations) {
@@ -653,33 +657,63 @@ export default Vue.extend({
             console.log('address is', this.provider!.myEthAddress);
         },
         async initProvider(): Promise<IProvider | null> {
-            const ethereum = window.ethereum;
 
-            if (!ethereum) {
-                alert(this.$t('Bridge.errors.installMetamask') as string);
+            console.log('initProvider');
+            // WalletConnect
+            const provider = new WalletConnect({
+                infuraId: 'd29ee9db9b7b4bbc8fa5d28047a3ff47',
+                qrcode: true
+            });
+
+            console.log('WalletConnect created');
+
+            try {
+                await provider.enable();
+            } catch (error) {
+                console.log(error.message);
+                return null;
+            }
+
+            console.log('WalletConnect enabled');
+
+            // Metamask
+            // const provider = window.ethereum;
+
+            if (!provider) {
+                alert('No provider'); // TODO
                 return null;
             } else {
+                const web3 = new Web3(provider as any);
+
                 let myEthAddress;
                 try {
-                    const accounts = (await ethereum.send('eth_requestAccounts')).result;
-                    myEthAddress = accounts[0];
+                    const accounts = await web3.eth.getAccounts();
+                    myEthAddress = accounts[0]
                     console.log('address is', myEthAddress);
                 } catch (error) {
-                    console.log(error);
+                    console.log(error.message);
                     return null;
                 }
 
-                ethereum.addListener('accountsChanged', this.onAccountChanged);
+                let chainID;
+                try {
+                    chainID = String(await web3.eth.net.getId()); //getChainId
+                    console.log('chainID is', chainID);
+                } catch (error) {
+                    console.log(error.message);
+                    return null;
+                }
 
-                if (ethereum.networkVersion as string !== String(this.params.ethChainId)) {
+                if (chainID !== String(this.params.ethChainId)) {
                     //eth
                     const error = (this.$t('Bridge.errors.wrongMetamaskNetwork') as string)
-                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string)
+                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string) // TODO metamask title hardcoded
                     alert(error);
                     return null;
                 }
 
-                const web3 = new Web3(ethereum);
+                provider.on('accountsChanged', this.onAccountChanged); // TODO was AddEventListener
+
                 const wtonContract = new web3.eth.Contract(WTON as AbiItem[], this.params.wTonAddress);
                 const oraclesTotal = (await wtonContract.methods.getFullOracleSet().call()).length;
 
@@ -692,8 +726,11 @@ export default Vue.extend({
                     return null;
                 }
 
-                this.newBlockHeadersSubscription = web3.eth.subscribe('newBlockHeaders')
+                const blocksListener = new Web3(new Web3.providers.WebsocketProvider('wss://ropsten.infura.io/ws/v3/d29ee9db9b7b4bbc8fa5d28047a3ff47'));
+
+                this.newBlockHeadersSubscription = blocksListener.eth.subscribe('newBlockHeaders')
                     .on('data', (blockHeader) => {
+                        console.log('newBlockHeaders', blockHeader.number);
                         this.provider!.blockNumber = blockHeader.number;
                     })
                     .on('error', (error) => {
@@ -701,8 +738,10 @@ export default Vue.extend({
                     });
 
                 const tonweb = new TonWeb(new TonWeb.HttpProvider(this.params.tonCenterUrl));
+                console.log('tonweb', tonweb);
 
                 const bridgeData = (await tonweb.provider.call(this.params.tonBridgeAddress, 'get_bridge_data', [])).stack;
+                console.log('bridgeData', bridgeData);
 
                 if (bridgeData.length !== 8) throw new Error('Invalid bridge data')
                 const stateFlags = getNumber(bridgeData[0]);
