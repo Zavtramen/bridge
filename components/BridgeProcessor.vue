@@ -10,25 +10,30 @@
                 <div
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 1, 'pending': state.step === 1, 'done': state.step > 1}"></div>
-                <div class="BridgeProcessor-info-text" v-html="getStepInfoText1"></div>
+                <div class="BridgeProcessor-info-text" v-if="!getStepInfoText1.isOnlyText">
+                    {{ getStepInfoText1.sendAmount }}<br/>
+                    <a :href="getStepInfoText1.url" target="_blank">{{ getStepInfoText1.url }}</a>
+                    <div class="note">{{ getStepInfoText1.sendFromPersonal }} <b>{{ getStepInfoText1.sendNotFromExchanges }}</b></div>
+                </div>
+                <div class="BridgeProcessor-info-text" v-else>{{ getStepInfoText1.text }}</div>
             </div>
             <div class="BridgeProcessor-infoLine" v-if="!isFromTon">
                 <div
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 2, 'pending': state.step === 2, 'done': state.step > 2}"></div>
-                <div class="BridgeProcessor-info-text" v-html="getStepInfoText2"></div>
+                <div class="BridgeProcessor-info-text">{{ getStepInfoText2 }}</div>
             </div>
             <div class="BridgeProcessor-infoLine">
                 <div
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 3, 'pending': state.step === 3, 'done': state.step > 3}"></div>
-                <div class="BridgeProcessor-info-text" v-html="getStepInfoText3"></div>
+                <div class="BridgeProcessor-info-text">{{ getStepInfoText3 }}</div>
             </div>
             <div class="BridgeProcessor-infoLine">
                 <div
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 4, 'pending': state.step === 4, 'done': state.step > 4}"></div>
-                <div class="BridgeProcessor-info-text" v-html="getStepInfoText4"></div>
+                <div class="BridgeProcessor-info-text">{{ getStepInfoText4 }}</div>
             </div>
         </div>
 
@@ -58,7 +63,7 @@ import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
 import WalletConnect from '@walletconnect/web3-provider';
-import { httpGet, toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
+import { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
@@ -217,7 +222,7 @@ export default Vue.extend({
             const pair = this.isFromTon ? this.pair : 'ton';
             return this.$t(`Bridge.networks.${pair}.${this.netTypeName}.name`) as string;
         },
-        getStepInfoText1(): string {
+        getStepInfoText1(): object {
             if (this.state.step === 1) {
                 if (this.isFromTon) {
                     const url = PARAMS.tonTransferUrl
@@ -225,18 +230,31 @@ export default Vue.extend({
                         .replace('<AMOUNT>', String(toUnit(this.amount)))
                         .replace('<TO_ADDRESS>', this.toAddress);
 
-                    return (this.$t(`Bridge.networks.ton.transactionSend`) as string)
+                    const sendAmount = (this.$t(`Bridge.networks.ton.transactionSendAmount`) as string)
                         .replace('<AMOUNT>', String(this.amount))
-                        .replace('<FROM_COIN>', this.fromCoin)
-                        .replace(/<URL>/g, url);
+                        .replace('<FROM_COIN>', this.fromCoin);
+
+                    return {
+                        isOnlyText: false,
+                        sendAmount,
+                        url,
+                        sendFromPersonal: this.$t(`Bridge.networks.ton.transactionSendFromPersonal`) as string,
+                        sendNotFromExchanges: this.$t(`Bridge.networks.ton.transactionSendNotFromExchanges`) as string
+                    }
                 } else {
-                    return this.state.fromCurrencySent ?
-                        this.$t(`Bridge.networks.${this.pair}.transactionWait`) as string :
-                        this.$t(`Bridge.networks.${this.pair}.transactionSend`) as string;
+                    return {
+                        isOnlyText: true,
+                        text: this.state.fromCurrencySent ?
+                            this.$t(`Bridge.networks.${this.pair}.transactionWait`) as string :
+                            this.$t(`Bridge.networks.${this.pair}.transactionSend`) as string
+                    }
                 }
             } else {
                 const pair = this.isFromTon ? 'ton' : this.pair;
-                return this.$t(`Bridge.networks.${pair}.transactionCompleted`) as string;
+                return {
+                    isOnlyText: true,
+                    text: this.$t(`Bridge.networks.${pair}.transactionCompleted`) as string
+                }
             }
         },
         getStepInfoText2(): string {
@@ -704,7 +722,7 @@ export default Vue.extend({
                     return null;
                 }
 
-                if (chainID !== String(this.params.ethChainId)) {
+                if (chainID !== String(this.params.chainId)) {
                     //eth
                     const error = (this.$t('Bridge.errors.wrongMetamaskNetwork') as string)
                         .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string) // TODO metamask title hardcoded
@@ -900,7 +918,7 @@ export default Vue.extend({
     }
 
     &-info-text {
-        /deep/ a {
+        a {
             color: #1d98dc;
             text-decoration: underline;
 
@@ -910,7 +928,7 @@ export default Vue.extend({
             }
         }
 
-        /deep/ .note {
+        .note {
             margin-top: 8px;
         }
     }

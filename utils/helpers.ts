@@ -1,6 +1,6 @@
 import TonWeb from 'tonweb';
 
-export { httpGet, toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec, supportsLocalStorage };
+export { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec, supportsLocalStorage };
 
 function supportsLocalStorage(): boolean {
     try {
@@ -10,26 +10,6 @@ function supportsLocalStorage(): boolean {
     }
 }
 
-function httpGet(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.setRequestHeader('Cache-Control', 'no-store, max-age=0');
-        xhr.onload = e => {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    resolve(xhr.responseText);
-                } else {
-                    reject(xhr.statusText);
-                }
-            }
-        }
-        xhr.onerror = e => {
-            reject(xhr.statusText);
-        };
-        xhr.send(null);
-    })
-}
 
 function toUnit(n: number): number {
     return n * 1e9; // todo: BN

@@ -1,15 +1,16 @@
 interface IParamsNetwork {
     getGasUrl: string,
-    coinStatUrl: string,
+    explorerUrl: string,
     wTonAddress: string,
     tonBridgeAddress: string,
     tonCollectorAddress: string,
     tonMultisigAddress: string,
     tonCenterUrl: string,
-    ethChainId: number,
+    chainId: number,
     blocksConfirmations: number,
-    fallbackFeeTo: number,
-    fallbackFeeFrom: number
+    defaultGwei: number,
+    coinsPerGweiTo: number,
+    coinsPerGweiFrom: number
 }
 
 interface IParams {

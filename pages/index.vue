@@ -90,7 +90,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import lodashDebounce from 'lodash.debounce';
-import { httpGet, supportsLocalStorage } from '~/utils/helpers';
+import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 import BridgeProcessor from '~/components/BridgeProcessor.vue'
 
@@ -165,7 +165,7 @@ export default Vue.extend({
             return this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.coin`) as string;
         },
         pairNetworkCoinUrl(): string {
-            const url = this.params.coinStatUrl as string;
+            const url = this.params.explorerUrl as string;
             const address = this.params.wTonAddress as string;
             return url.replace('<ADDRESS>', address) as string;
         },
@@ -176,23 +176,10 @@ export default Vue.extend({
             return label.replace('<NETWORK>', networkFillName) as string;
         },
         pairFee(): string {
-            let fee: string = '';
+            const n = this.gasPrice ? this.gasPrice / this.params.defaultGwei : 1;
+            const fee = this.isFromTon ? (this.params.coinsPerGweiTo * n) : (this.params.coinsPerGweiFrom * n);
 
-            if (this.gasPrice > 0) {
-                if (this.pair === 'eth') {
-                    const n = this.gasPrice / 25;
-                    fee = this.isFromTon ? (0.004 * n).toFixed(4) : (0.001 * n).toFixed(4);
-                }
-
-                if (this.pair === 'bsc') {
-                    const n = this.gasPrice / 5;
-                    fee = this.isFromTon ? (0.0008 * n).toFixed(4) : (0.0002 * n).toFixed(4);
-                }
-            } else {
-                fee = String(this.isFromTon ? this.params.fallbackFeeTo : this.params.fallbackFeeFrom);
-            }
-
-            return (this.$t(`Bridge.networks.${this.pair}.gasFee`) as string).replace('<FEE>', fee);
+            return (this.$t(`Bridge.networks.${this.pair}.gasFee`) as string).replace('<FEE>', fee.toFixed(4));
         },
         amount: {
             get(): number {
@@ -337,23 +324,35 @@ export default Vue.extend({
         },
         async getPairGasFee(): Promise<void> {
             let data;
+            let gasPrice = 0;
 
             try {
-                data = JSON.parse(await httpGet(this.params.getGasUrl));
+                const response = await fetch(this.params.getGasUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-store, max-age=0'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`An error has occured: ${response.status}`);
+                }
+
+                data = await response.json();
             } catch (e) {
                 this.gasPrice = 0;
                 return;
             }
 
             if (this.pair === 'eth') {
-                const gasPrice = parseFloat(data.average) / 10;
-                this.gasPrice = gasPrice > 0 ? gasPrice : 25;
+                gasPrice = parseFloat(data.average) / 10;
             }
 
             if (this.pair === 'bsc') {
-                const gasPrice = parseFloat(data.result.SafeGasPrice);
-                this.gasPrice = gasPrice > 0 ? gasPrice : 5;
+                gasPrice = parseFloat(data.result.SafeGasPrice);
             }
+
+            this.gasPrice = gasPrice > 0 ? gasPrice : this.params.defaultGwei;
         }
     }
 })

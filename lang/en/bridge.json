@@ -3,21 +3,23 @@
     "networks": {
         "ton": {
             "transactionCompleted": "TON transaction completed successfully",
-            "transactionSend": "Please send <AMOUNT> <FROM_COIN>s to bridge smart-contract<br><a href=\"<URL>\" target=\"_blank\"><URL></a><div class=\"note\">Send from your personal wallet. <b>Do not send directly from exchanges and bots!</b></div>",
+            "transactionSendAmount": "Please send <AMOUNT> <FROM_COIN>s to bridge smart-contract",
+            "transactionSendFromPersonal": "Send from your personal wallet.",
+            "transactionSendNotFromExchanges": "Do not send directly from exchanges and bots!",
             "errors": {
                 "invalidAddress": "Not valid TON address"
             },
             "main": {
                 "name": "TON Network",
                 "full": "TON Network",
-                "coin": "TON Coin (Native)",
-                "coinShort": "TON Coin"
+                "coin": "Toncoin",
+                "coinShort": "Toncoin"
             },
             "test" : {
                 "name": "TON Testnet",
                 "full": "TON Testnet",
-                "coin": "TON Coin (Native)",
-                "coinShort": "TON Coin"
+                "coin": "Toncoin",
+                "coinShort": "Toncoin"
             }
         },
         "eth": {
