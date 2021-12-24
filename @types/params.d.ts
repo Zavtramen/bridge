@@ -14,6 +14,7 @@ interface IParamsNetwork {
 }
 
 interface IParams {
+    infuraId: string,
     tonTransferUrl: string,
     networks: {
         [key: string]: {

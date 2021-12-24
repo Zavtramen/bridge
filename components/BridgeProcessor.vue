@@ -62,7 +62,6 @@ import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
-import WalletConnect from '@walletconnect/web3-provider';
 import { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
@@ -78,7 +77,6 @@ declare interface IEthToTon {
     value: number,
     blockTime: number,
     blockHash: string,
-    blockNumber: number,
     from: string
 }
 
@@ -103,12 +101,10 @@ declare interface IVoteEth {
     v: number | undefined
 }
 
-declare interface IProvider {
+declare interface IProviderData {
     oraclesTotal: number,
     blockNumber: number,
-    myEthAddress: string,
     wtonContract: Contract,
-    web3: Web3,
     tonweb: TonWeb,
     feeFlat: typeof BN,
     feeFactor: typeof BN,
@@ -130,7 +126,7 @@ declare interface IState {
 declare interface IComponentData {
     newBlockHeadersSubscription: any,
     updateStateInterval: null | ReturnType<typeof setInterval>,
-    provider: IProvider | null,
+    providerData: IProviderData | null,
     state: IState,
     ethToTon: IEthToTon | null
 }
@@ -168,13 +164,17 @@ export default Vue.extend({
             type: String,
             required: true
         },
+        provider: {
+            type: Object,
+            required: true
+        }
     },
 
     data(): IComponentData {
         return {
             newBlockHeadersSubscription: null,
             updateStateInterval: null,
-            provider: null,
+            providerData: null,
             ethToTon: null,
 
             state: {
@@ -246,7 +246,8 @@ export default Vue.extend({
                         isOnlyText: true,
                         text: this.state.fromCurrencySent ?
                             this.$t(`Bridge.networks.${this.pair}.transactionWait`) as string :
-                            this.$t(`Bridge.networks.${this.pair}.transactionSend`) as string
+                            (this.$t(`Bridge.networks.${this.pair}.transactionSend`) as string)
+                                .replace('<PROVIDER>', this.provider.title)
                     }
                 }
             } else {
@@ -263,8 +264,8 @@ export default Vue.extend({
             }
 
             if (this.state.step === 2) {
-                let blocksConfirmations = (this.provider?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
-                blocksConfirmations = Math.min(blocksConfirmations, this.params.blocksConfirmations);
+                let blocksConfirmations = (this.providerData?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
+                blocksConfirmations = Math.max(Math.min(blocksConfirmations, this.params.blocksConfirmations), 0);
 
                 return (this.$t(`Bridge.networks.${this.pair}.blocksConfirmations`) as string)
                     .replace('<COUNT>', String(blocksConfirmations) + '/' + String(this.params.blocksConfirmations));
@@ -276,7 +277,7 @@ export default Vue.extend({
         },
         getStepInfoText3(): string {
             if (this.state.step === 3) {
-                const votesConfirmations = (this.state.votes?.length || 0) + '/' + (this.provider?.oraclesTotal || 0);
+                const votesConfirmations = (this.state.votes?.length || 0) + '/' + (this.providerData?.oraclesTotal || 0);
 
                 return (this.$t(`Bridge.oraclesConfirmations`) as string)
                     .replace('<COUNT>', String(votesConfirmations));
@@ -291,8 +292,9 @@ export default Vue.extend({
                 if (this.isFromTon) {
                     return this.state.toCurrencySent ?
                         this.$t(`Bridge.networks.${this.pair}.transactionWait`) as string :
-                        (this.$t(`Bridge.getCoinsByMetamask`) as string)
-                            .replace('<TO_COIN>', this.toCoin);
+                        (this.$t(`Bridge.getCoinsByProvider`) as string)
+                            .replace('<TO_COIN>', this.toCoin)
+                            .replace('<PROVIDER>', this.provider.title);
 
                 } else {
                     return (this.$t(`Bridge.coinsSent`) as string)
@@ -327,18 +329,6 @@ export default Vue.extend({
 
     beforeDestroy(): void  {
         clearInterval(this.updateStateInterval as ReturnType<typeof setInterval>);
-
-        if (this.newBlockHeadersSubscription) {
-            this.newBlockHeadersSubscription.unsubscribe();
-        }
-
-
-        // TODO add WalletConnect provider
-        const ethereum = window.ethereum;
-
-        if (ethereum) {
-            ethereum.removeListener('accountsChanged', this.onAccountChanged);
-        }
     },
 
     methods: {
@@ -360,9 +350,9 @@ export default Vue.extend({
                  return;
             }
 
-            this.provider = await this.initProvider();
+            this.providerData = await this.initProvider();
 
-            if (!this.provider) {
+            if (!this.providerData) {
                 return;
             }
             Object.assign(this.state, processingState);
@@ -379,18 +369,21 @@ export default Vue.extend({
             if (this.state.step === 1 && this.isFromTon) {
                 const swap = await this.getSwap(this.amount, this.toAddress, this.state.createTime);
                 if (swap) {
-                    this.state.swapId = this.getSwapTonToEthId(this.provider!.web3, swap);
+                    this.state.swapId = this.getSwapTonToEthId(swap);
                     this.state.swapData = swap;
                     this.state.step = 3;
                 }
             }
 
             if (this.state.step === 2 && !this.isFromTon) {
-                console.log(this.provider?.blockNumber, this.state.blockNumber);
-                const blocksConfirmations = (this.provider?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
+                const blockNumber = await this.provider.web3.eth.getBlockNumber();
+                this.providerData!.blockNumber = blockNumber;
+
+                console.log(this.providerData?.blockNumber, this.state.blockNumber);
+                const blocksConfirmations = (this.providerData?.blockNumber || this.state.blockNumber) - this.state.blockNumber;
 
                 if (blocksConfirmations > this.params.blocksConfirmations) {
-                    const block = await this.provider!.web3.eth.getBlock(this.state.blockNumber);
+                    const block = await this.provider.web3.eth.getBlock(this.state.blockNumber);
 
                     this.ethToTon!.blockTime = Number(block.timestamp);
                     this.ethToTon!.blockHash = block.hash;
@@ -402,23 +395,23 @@ export default Vue.extend({
 
             if (this.state.step === 3) {
                 this.state.votes = this.isFromTon ? await this.getEthVote(this.state.swapId) : await this.getTonVote(this.state.queryId);
-                if (this.state.votes && this.state.votes!.length >= this.provider!.oraclesTotal * 2 / 3) {
+                if (this.state.votes && this.state.votes!.length >= this.providerData!.oraclesTotal * 2 / 3) {
                     this.state.step = this.isFromTon ? 4 : 5;
                 }
             }
         },
-        getSwapTonToEthId(web3: any, d: ISwapData): string {
+        getSwapTonToEthId(d: ISwapData): string {
             let encodedParams;
 
             if (this.pair === 'eth') {
-                encodedParams = web3.eth.abi.encodeParameters(
+                encodedParams = this.provider.web3.eth.abi.encodeParameters(
                     ['int', 'address', 'uint256', 'int8', 'bytes32', 'bytes32', 'uint64'],
                     [0xDA7A, d.receiver, d.amount, d.tx.address_.workchain, d.tx.address_.address_hash, d.tx.tx_hash, d.tx.lt]
                 )
             }
 
             if (this.pair === 'bsc') {
-                encodedParams = web3.eth.abi.encodeParameters(
+                encodedParams = this.provider.web3.eth.abi.encodeParameters(
                     ['int', 'address', 'address', 'uint256', 'int8', 'bytes32', 'bytes32', 'uint64'],
                     [0xDA7A, this.params.wTonAddress, d.receiver, d.amount, d.tx.address_.workchain, d.tx.address_.address_hash, d.tx.tx_hash, d.tx.lt]
                 )
@@ -446,9 +439,9 @@ export default Vue.extend({
             return new BN(timeout).mul(new BN(4294967296)).add(new BN(query_id, 16));
         },
         getFeeAmount(amount: typeof BN): string {
-            const rest = new BN(amount).sub(this.provider!.feeFlat);
-            const percentFee = rest.mul(this.provider!.feeFactor).div(this.provider!.feeBase);
-            return this.provider!.feeFlat.add(percentFee)
+            const rest = new BN(amount).sub(this.providerData!.feeFlat);
+            const percentFee = rest.mul(this.providerData!.feeFactor).div(this.providerData!.feeBase);
+            return this.providerData!.feeFlat.add(percentFee)
         },
         makeAddress(address: string): string {
             if (!address.startsWith('0x')) throw new Error('Invalid address ' + address);
@@ -460,7 +453,7 @@ export default Vue.extend({
         },
         async getSwap(myAmount: number, myToAddress: string, myCreateTime: number): Promise<null | ISwapData> {
             console.log('getTransactions', this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
-            const transactions = await this.provider!.tonweb.provider.getTransactions(this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
+            const transactions = await this.providerData!.tonweb.provider.getTransactions(this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             console.log('ton txs', transactions.length);
 
             const findLogOutMsg = (outMessages?: any[]) => {
@@ -531,7 +524,7 @@ export default Vue.extend({
         async getEthVote(voteId: string): Promise<null | IVoteEth[]> {
             console.log('getEthVote ', voteId);
 
-            const result = await this.provider!.tonweb.provider.call(this.params.tonCollectorAddress, 'get_external_voting_data', [['num', voteId]]);
+            const result = await this.providerData!.tonweb.provider.call(this.params.tonCollectorAddress, 'get_external_voting_data', [['num', voteId]]);
             if (result.exit_code === 309) {
                 return null;
             }
@@ -553,7 +546,7 @@ export default Vue.extend({
         async getTonVote(queryId: string): Promise<null | number[]> {
             console.log('getTonVote ', queryId);
 
-            const result = await this.provider!.tonweb.provider.call(this.params.tonMultisigAddress, 'get_query_state', [['num', queryId]]);
+            const result = await this.providerData!.tonweb.provider.call(this.params.tonMultisigAddress, 'get_query_state', [['num', queryId]]);
 
             let a, b;
             try {
@@ -566,13 +559,56 @@ export default Vue.extend({
             console.log('getTonVote', result, a, b);
 
             const arr = [];
-            const count = a === -1 ? this.provider!.oraclesTotal : b.toString(2).split('0').join('').length; // count of bits
+            const count = a === -1 ? this.providerData!.oraclesTotal : b.toString(2).split('0').join('').length; // count of bits
             for (let i = 0; i < count; i++) {
                 arr.push(1);
             }
             return arr;
         },
+        onDoneClick(): void {
+            this.resetState();
+        },
+        onCancelClick(): void {
+            this.deleteState();
+            this.resetState();
+        },
+        async checkProviderIsReady(): Promise<boolean> {
+            try {
+                if (!this.provider.isConnected) {
+                    const error = (this.$t('Bridge.errors.providerIsDisconnected') as string)
+                        .replace('<PROVIDER>', this.provider.title)
+                    throw new Error(error);
+                }
+
+                if (!this.provider.myAddress) {
+                    throw new Error(this.$t('Bridge.errors.cantGetAddress') as string);
+                }
+
+                if (this.provider.chainId !== this.params.chainId) {
+                    const error = (this.$t('Bridge.errors.wrongProviderNetwork') as string)
+                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string)
+                        .replace('<PROVIDER>', this.provider.title)
+                    throw new Error(error);
+                }
+
+                if (!(new BN(await this.provider.web3.eth.getBalance(this.provider.myAddress)).gt(new BN('0')))) {
+                    throw new Error(this.$t(`Bridge.networks.${this.pair}.errors.lowBalance`) as string);
+                }
+            } catch (e) {
+                console.error(e.message);
+                alert(e.message);
+                return false;
+            }
+
+            return true;
+        },
         async mint(): Promise<any> {
+            const isProviderReady = await this.checkProviderIsReady();
+
+            if (!isProviderReady) {
+                return;
+            }
+
             let receipt;
             try {
                 let signatures = (this.state.votes! as IVoteEth[]).map(v => {
@@ -588,7 +624,7 @@ export default Vue.extend({
 
                 console.log('voteForMinting', JSON.stringify(this.state.swapData!), JSON.stringify(signatures));
 
-                receipt = await this.provider!.wtonContract.methods.voteForMinting(this.state.swapData!, signatures).send({from: this.provider!.myEthAddress})
+                receipt = await this.providerData!.wtonContract.methods.voteForMinting(this.state.swapData!, signatures).send({from: this.provider.myAddress})
                     .on('transactionHash', () => {
                         this.state.toCurrencySent = true;
                         this.deleteState();
@@ -606,7 +642,13 @@ export default Vue.extend({
             }
         },
         async burn(): Promise<void> {
-            const fromAddress = this.provider!.myEthAddress;
+            const isProviderReady = await this.checkProviderIsReady();
+
+            if (!isProviderReady) {
+                return;
+            }
+
+            const fromAddress = this.provider.myAddress;
             const toAddress = this.toAddress;
             const amount = this.amount;
 
@@ -618,7 +660,7 @@ export default Vue.extend({
             let receipt;
 
             try {
-                receipt = await this.provider!.wtonContract.methods.burn(amountUnit, {
+                receipt = await this.providerData!.wtonContract.methods.burn(amountUnit, {
                     workchain: wc,
                     address_hash: '0x' + hashPart
                 }).send({from: fromAddress})
@@ -638,7 +680,6 @@ export default Vue.extend({
                 this.ethToTon = {
                     transactionHash: receipt.transactionHash,
                     logIndex: receipt.events.SwapEthToTon.logIndex,
-                    blockNumber: this.state.blockNumber,
                     blockTime: 0,
                     blockHash: '',
                     from: fromAddress,
@@ -654,137 +695,48 @@ export default Vue.extend({
                 console.error('transaction fail', receipt);
             }
         },
-        onDoneClick(): void {
-            this.resetState();
-        },
-        onCancelClick(): void {
-            this.deleteState();
-            this.resetState();
-        },
-        async onAccountChanged(accounts: Array<any>): Promise<void>  {
-            console.log('accountsChanged', accounts);
-            const address: string = accounts[0] as string;
-            if (!this.provider) {
-                return;
-            }
-            if (!(new BN(await this.provider!.web3.eth.getBalance(address)).gt(new BN('0')))) {
-                alert(this.$t(`Bridge.networks.${this.pair}.errors.lowBalance`) as string);
-                return;
-            }
-            this.provider!.myEthAddress = address;
-            console.log('address is', this.provider!.myEthAddress);
-        },
-        async initProvider(): Promise<IProvider | null> {
+        async initProvider(): Promise<IProviderData | null> {
+            const isProviderReady = await this.checkProviderIsReady();
 
-            console.log('initProvider');
-            // WalletConnect
-            const provider = new WalletConnect({
-                infuraId: 'd29ee9db9b7b4bbc8fa5d28047a3ff47',
-                qrcode: true
-            });
-
-            console.log('WalletConnect created');
-
-            try {
-                await provider.enable();
-            } catch (error) {
-                console.log(error.message);
+            if (!isProviderReady) {
                 return null;
             }
 
-            console.log('WalletConnect enabled');
+            const wtonContract = new this.provider.web3.eth.Contract(WTON as AbiItem[], this.params.wTonAddress);
+            const oraclesTotal = (await wtonContract.methods.getFullOracleSet().call()).length;
 
-            // Metamask
-            // const provider = window.ethereum;
-
-            if (!provider) {
-                alert('No provider'); // TODO
+            if (!(oraclesTotal > 0)) {
                 return null;
-            } else {
-                const web3 = new Web3(provider as any);
-
-                let myEthAddress;
-                try {
-                    const accounts = await web3.eth.getAccounts();
-                    myEthAddress = accounts[0]
-                    console.log('address is', myEthAddress);
-                } catch (error) {
-                    console.log(error.message);
-                    return null;
-                }
-
-                let chainID;
-                try {
-                    chainID = String(await web3.eth.net.getId()); //getChainId
-                    console.log('chainID is', chainID);
-                } catch (error) {
-                    console.log(error.message);
-                    return null;
-                }
-
-                if (chainID !== String(this.params.chainId)) {
-                    //eth
-                    const error = (this.$t('Bridge.errors.wrongMetamaskNetwork') as string)
-                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string) // TODO metamask title hardcoded
-                    alert(error);
-                    return null;
-                }
-
-                provider.on('accountsChanged', this.onAccountChanged); // TODO was AddEventListener
-
-                const wtonContract = new web3.eth.Contract(WTON as AbiItem[], this.params.wTonAddress);
-                const oraclesTotal = (await wtonContract.methods.getFullOracleSet().call()).length;
-
-                if (!(oraclesTotal > 0)) {
-                    return null;
-                }
-
-                if (!(new BN(await web3.eth.getBalance(myEthAddress)).gt(new BN('0')))) {
-                    alert(this.$t(`Bridge.networks.${this.pair}.errors.lowBalance`) as string);
-                    return null;
-                }
-
-                const blocksListener = new Web3(new Web3.providers.WebsocketProvider('wss://ropsten.infura.io/ws/v3/d29ee9db9b7b4bbc8fa5d28047a3ff47'));
-
-                this.newBlockHeadersSubscription = blocksListener.eth.subscribe('newBlockHeaders')
-                    .on('data', (blockHeader) => {
-                        console.log('newBlockHeaders', blockHeader.number);
-                        this.provider!.blockNumber = blockHeader.number;
-                    })
-                    .on('error', (error) => {
-                        console.error("Error on newBlockHeaders", error);
-                    });
-
-                const tonweb = new TonWeb(new TonWeb.HttpProvider(this.params.tonCenterUrl));
-                console.log('tonweb', tonweb);
-
-                const bridgeData = (await tonweb.provider.call(this.params.tonBridgeAddress, 'get_bridge_data', [])).stack;
-                console.log('bridgeData', bridgeData);
-
-                if (bridgeData.length !== 8) throw new Error('Invalid bridge data')
-                const stateFlags = getNumber(bridgeData[0]);
-                const totalLocked = getNumber(bridgeData[1]);
-                const collectorWc = getNumber(bridgeData[2]);
-                const collectorAddr = bridgeData[3][1]; // string
-                const feeFlat = new BN(getNumber(bridgeData[4]));
-                const feeNetwork = new BN(getNumber(bridgeData[5]));
-                const feeFactor = new BN(getNumber(bridgeData[6]));
-                const feeBase = new BN(getNumber(bridgeData[7]));
-
-                const res: IProvider = {
-                    blockNumber: 0,
-                    myEthAddress,
-                    web3,
-                    wtonContract,
-                    tonweb,
-                    oraclesTotal,
-                    feeFlat: feeFlat.add(feeNetwork),
-                    feeFactor,
-                    feeBase
-                };
-
-                return res;
             }
+
+            const tonweb = new TonWeb(new TonWeb.HttpProvider(this.params.tonCenterUrl));
+            const bridgeData = (await tonweb.provider.call(this.params.tonBridgeAddress, 'get_bridge_data', [])).stack;
+
+            if (bridgeData.length !== 8) {
+                console.error('Invalid bridge data', bridgeData);
+                return null;
+            }
+
+            const stateFlags = getNumber(bridgeData[0]);
+            const totalLocked = getNumber(bridgeData[1]);
+            const collectorWc = getNumber(bridgeData[2]);
+            const collectorAddr = bridgeData[3][1]; // string
+            const feeFlat = new BN(getNumber(bridgeData[4]));
+            const feeNetwork = new BN(getNumber(bridgeData[5]));
+            const feeFactor = new BN(getNumber(bridgeData[6]));
+            const feeBase = new BN(getNumber(bridgeData[7]));
+
+            const res: IProviderData = {
+                blockNumber: 0,
+                wtonContract,
+                tonweb,
+                oraclesTotal,
+                feeFlat: feeFlat.add(feeNetwork),
+                feeFactor,
+                feeBase
+            };
+
+            return res;
         },
         async onTransferClick(): Promise<void> {
             if (isNaN(this.amount)) {
@@ -814,15 +766,16 @@ export default Vue.extend({
                 }
             }
 
-            if (!this.provider) {
-                this.provider = await this.initProvider();
-                if (!this.provider) {
+            if (!this.providerData) {
+                this.providerData = await this.initProvider();
+
+                if (!this.providerData) {
                     return;
                 }
             }
 
             if (!this.isFromTon) {
-                const userErcBalance = fromUnit(Number(await (this.provider!.wtonContract.methods.balanceOf(this.provider!.myEthAddress).call())));
+                const userErcBalance = fromUnit(Number(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call())));
                 if (this.amount > userErcBalance) {
                     alert((this.$t('Bridge.errors.toncoinBalance') as string).replace('<BALANCE>', String(userErcBalance)));
                     return;

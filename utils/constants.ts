@@ -1,4 +1,5 @@
 export const PARAMS: IParams = {
+    "infuraId": "d29ee9db9b7b4bbc8fa5d28047a3ff47",
     "tonTransferUrl": "ton://transfer/<BRIDGE_ADDRESS>?amount=<AMOUNT>&text=swapTo%23<TO_ADDRESS>",
     "networks": {
         "eth": {

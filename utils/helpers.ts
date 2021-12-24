@@ -1,6 +1,6 @@
 import TonWeb from 'tonweb';
 
-export { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec, supportsLocalStorage };
+export { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec, supportsLocalStorage, parseChainId };
 
 function supportsLocalStorage(): boolean {
     try {
@@ -10,6 +10,15 @@ function supportsLocalStorage(): boolean {
     }
 }
 
+function parseChainId(chainId: string | number): number {
+    if (typeof chainId === 'number') {
+        return chainId;
+    } if (typeof chainId === 'string') {
+        return parseInt(chainId, chainId.startsWith('0x') ? 16 : 10);
+    } else {
+        return 0;
+    }
+}
 
 function toUnit(n: number): number {
     return n * 1e9; // todo: BN

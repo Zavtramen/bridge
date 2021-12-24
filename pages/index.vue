@@ -59,6 +59,7 @@
                 <div class="Bridge-bridgeFee">{{bridgeFee}}</div>
 
                 <BridgeProcessor
+                    v-if="isLoggedIn"
                     ref="bridgeProcessor"
                     :key="pair"
                     :is-testnet="isTestnet"
@@ -69,12 +70,33 @@
                     :pair="pair"
                     :amount="amount"
                     :to-address="toAddress"
+                    :provider="provider"
                     @interface-blocked="onInterfaceBlocked"
                     @state-changed="getPairGasFee__debounced"
                     @reset-state="resetState"
                     @save-state="saveState"
                     @delete-state="deleteState"
                 /></BridgeProcessor>
+
+                <div class="Bridge-logInWrapper" v-else>
+                    <button
+                        class="Bridge-logIn"
+                        @click="onLogInClick">{{$t('Bridge.logIn')}}</button>
+
+                    <ul class="Bridge-providersList" :class="{visible: isProvidersVisible}">
+                        <li
+                            v-for="item in providersList"
+                            :key="item"
+                            @click="onProviderClick(item)">
+                            <button :data-icon="item">{{$t(`Bridge.providers.${item}`)}}</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div
+                    class="Bridge-logInOverlay"
+                    @click="isProvidersVisible = false"
+                    :class="{visible: isProvidersVisible}"></div>
 
                 <div class="Bridge-footer">
                     v2.0,
@@ -92,9 +114,15 @@ import Vue from 'vue'
 import lodashDebounce from 'lodash.debounce';
 import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
+import { Metamask, WalletConnect } from '~/utils/providers';
+import { Provider } from '~/utils/providers/provider';
 import BridgeProcessor from '~/components/BridgeProcessor.vue'
 
 const PAIRS = ['eth', 'bsc'];
+const PROVIDERS = {
+    'metamask': Metamask,
+    'walletConnect': WalletConnect
+};
 
 declare interface IComponentData {
     getPairGasFee__debounced: () => void,
@@ -109,8 +137,11 @@ declare interface IComponentData {
     pair: string,
     amountInner: string,
     toAddress: string,
+    provider: Provider | null,
 
-    isInterfaceBlocked: boolean
+    isInterfaceBlocked: boolean,
+    isLoggedIn: boolean,
+    isProvidersVisible: boolean
 }
 
 export default Vue.extend({
@@ -139,8 +170,11 @@ export default Vue.extend({
             pair: 'eth',
             amountInner: '',
             toAddress: '',
+            provider: null,
 
-            isInterfaceBlocked: false
+            isInterfaceBlocked: false,
+            isLoggedIn: false,
+            isProvidersVisible: false
         }
     },
 
@@ -203,6 +237,9 @@ export default Vue.extend({
         },
         toPairs(): string[] {
             return ['ton', ...PAIRS.filter(i => i !== this.pair)];
+        },
+        providersList(): string[] {
+            return Object.keys(PROVIDERS);
         }
     },
 
@@ -242,7 +279,7 @@ export default Vue.extend({
 
     mounted(): void {
         this.getPairGasFee__debounced();
-        this.loadState();
+        this.loadStateBridge();
     },
 
     methods: {
@@ -263,7 +300,7 @@ export default Vue.extend({
             this.amountInner = '';
             this.toAddress = '';
         },
-        loadState(): void {
+        loadStateBridge(): void {
             if (!supportsLocalStorage) {
                 return;
             }
@@ -278,14 +315,27 @@ export default Vue.extend({
                     return;
                 }
 
-                // for previous version
-                if (!state.pair) {
-                    return;
-                }
-
                 this.amount = state.amount;
                 this.toAddress = state.toAddress;
                 this.pair = state.pair;
+
+                this.isInterfaceBlocked = true;
+            }
+        },
+        loadStateProcessor(): void {
+            if (!supportsLocalStorage) {
+                return;
+            }
+
+            const raw = localStorage.getItem('bridgeState');
+
+            if (raw) {
+                let state: any;
+                try {
+                    state = JSON.parse(raw);
+                } catch (e) {
+                    return;
+                }
 
                 this.$nextTick(() => {
                     this.$refs.bridgeProcessor.loadState(state.processingState);
@@ -353,6 +403,30 @@ export default Vue.extend({
             }
 
             this.gasPrice = gasPrice > 0 ? gasPrice : this.params.defaultGwei;
+        },
+        onLogInClick(): void {
+            this.isProvidersVisible = true;
+        },
+        async onProviderClick(providerName: string): Promise<void> {
+            this.isProvidersVisible = false;
+
+            try {
+                this.provider = new PROVIDERS[providerName as keyof typeof PROVIDERS] as Provider;
+                const result = await this.provider.connect();
+
+                if (!result) {
+                    return;
+                }
+            } catch (e) {
+                const message = this.$te(e.message) ? this.$t(e.message) : e.message;
+                console.error(message);
+                alert(message);
+                return;
+            }
+
+            this.isLoggedIn = true;
+
+            this.loadStateProcessor();
         }
     }
 })
@@ -363,6 +437,8 @@ export default Vue.extend({
 @r: .Bridge;
 
 @{r} {
+    position: relative;
+
     &-testnetWarning {
         position: absolute;
         left: 0;
@@ -550,7 +626,6 @@ export default Vue.extend({
                     }
                 }
             }
-
         }
     }
 
@@ -599,6 +674,113 @@ export default Vue.extend({
     &-bridgeFee {
         color: #666666;
         margin-bottom: 10px;
+    }
+
+    &-logInWrapper {
+        margin-top: 20px;
+        position: relative;
+    }
+
+    &-logInOverlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+
+        transition: all 0 ease-in-out;
+        opacity: 0;
+        visibility: hidden;
+
+        &.visible {
+            transition: opacity 0.15s ease-in-out;
+            opacity: 1;
+            visibility: inherit;
+        }
+    }
+
+    &-logIn {
+        -webkit-appearance: none;
+        background-color: #1d98dc;
+        border-radius: 25px;
+        color: white;
+        font-size: 16px;
+        line-height: 19px;
+        border: none;
+        padding: 15px 35px 14px;
+
+        .isPointer &:hover,
+        .isTouch &:active {
+            background-color: #5fb8ea;
+        }
+    }
+
+    &-providersList {
+        background: #FFF;
+        border-radius: 16px;
+        box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
+        box-sizing: border-box;
+        color: #303757;
+        font-size: 16px;
+        line-height: 20px;
+        list-style-type: none;
+        margin: 0;
+        padding: 18px 36px;
+        position: absolute;
+        left: 50%;
+        margin-left: -125px;
+        width: 250px;
+        bottom: 70px;
+        word-break: break-word;
+        white-space: normal;
+        text-align: left;
+        z-index: 2;
+
+        transition: all 0 ease-in-out;
+        opacity: 0;
+        visibility: hidden;
+
+        &.visible {
+            transition: opacity 0.15s ease-in-out;
+            opacity: 1;
+            visibility: inherit;
+        }
+
+        li {
+            button {
+                padding: 10px 0;
+                color: #303757;
+                font-weight: 700;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+
+                .isPointer &:hover,
+                .isTouch &:active {
+                    color: #1d98dc;
+                }
+
+                &:before {
+                    content: '';
+                    position: relative;
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 16px;
+                }
+
+                &[data-icon="metamask"]:before {
+                    background-image: url('~assets/pics/providers/metamask.svg');
+                }
+
+                &[data-icon="walletConnect"]:before {
+                    background-image: url('~assets/pics/providers/walletConnect.svg');
+                }
+            }
+        }
     }
 
     &-footer {
