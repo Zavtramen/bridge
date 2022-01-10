@@ -275,6 +275,20 @@ export default Vue.extend({
         if (this.$route.query.toAddress) {
             this.toAddress = this.$route.query.toAddress as string;
         }
+        if (this.$route.query.fromNetwork && this.$route.query.toNetwork) {
+            const fromNetwork = this.$route.query.fromNetwork.toLowerCase();
+            const toNetwork = this.$route.query.toNetwork.toLowerCase();
+
+            if (fromNetwork === 'ton' && PAIRS.includes(toNetwork))  {
+                this.isFromTon = true;
+                this.pair = toNetwork;
+            }
+
+            if (toNetwork === 'ton' && PAIRS.includes(fromNetwork))  {
+                this.isFromTon = false;
+                this.pair = fromNetwork;
+            }
+        }
     },
 
     mounted(): void {
