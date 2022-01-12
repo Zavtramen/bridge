@@ -68,6 +68,6 @@ export default {
         // }
     },
     router: {
-        base: '/bridge-frontend/'
+        base: './'
     }
 }
