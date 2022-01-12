@@ -1,9 +1,10 @@
 {
-    "logIn": "Log In",
+    "connectWallet": "Connect Wallet",
     "testnet": "TESTNET",
     "providers": {
         "metamask": "Metamask",
-        "walletConnect": "WalletConnect"
+        "walletConnect": "WalletConnect",
+        "walletLink": "WalletLink"
     },
     "networks": {
         "ton": {

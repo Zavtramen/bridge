@@ -5,8 +5,8 @@
             <div class="Bridge-img" :class="{isFromTon}"></div>
             <div class="Bridge-form">
                 <div class="Bridge-switchers" :class="{isFromTon}" :key="isFromTon">
-                    <div class="Bridge-switcher">
-                        <div class="Bridge-switcherTitle" :class="{disabled: isInterfaceBlocked}">
+                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                        <div class="Bridge-switcherTitle">
                             <span>{{tonNetworkName}}&nbsp;▾</span>
                             <ul class="Bridge-switcherList">
                                 <li
@@ -20,11 +20,11 @@
 
                     <button
                         class="Bridge-switcher-arrow"
-                        :disabled="isInterfaceBlocked"
+                        :disabled="isPairsBlocked"
                         @click="toggleFromTon"></button>
 
-                    <div class="Bridge-switcher">
-                        <div class="Bridge-switcherTitle" :class="{disabled: isInterfaceBlocked}">
+                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                        <div class="Bridge-switcherTitle">
                             <span>{{pairNetworkName}}&nbsp;▾</span>
                             <ul class="Bridge-switcherList">
                                 <li
@@ -40,7 +40,7 @@
                 <div class="Bridge-inputWrapper">
                     <label for="amountInput">{{$t('Bridge.amountOfTon')}}</label><br>
                     <input
-                        :disabled="isInterfaceBlocked"
+                        :disabled="isInputsBlocked"
                         type="number"
                         id="amountInput"
                         v-model="amountInner">
@@ -49,7 +49,7 @@
                 <div class="Bridge-inputWrapper">
                     <label for="toInput" id="toInputLabel">{{addressInputLabel}}</label><br>
                     <input
-                        :disabled="isInterfaceBlocked"
+                        :disabled="isInputsBlocked"
                         type="text"
                         id="toInput"
                         v-model="toAddress">
@@ -59,7 +59,7 @@
                 <div class="Bridge-bridgeFee">{{bridgeFee}}</div>
 
                 <BridgeProcessor
-                    v-if="isLoggedIn"
+                    v-if="isConnected"
                     ref="bridgeProcessor"
                     :key="pair"
                     :is-testnet="isTestnet"
@@ -71,17 +71,17 @@
                     :amount="amount"
                     :to-address="toAddress"
                     :provider="provider"
-                    @interface-blocked="onInterfaceBlocked"
+                    @transfer-in-progress="onTransferInProgress"
                     @state-changed="getPairGasFee__debounced"
                     @reset-state="resetState"
                     @save-state="saveState"
                     @delete-state="deleteState"
                 /></BridgeProcessor>
 
-                <div class="Bridge-logInWrapper" v-else>
+                <div class="Bridge-connectedWrapper" v-else>
                     <button
-                        class="Bridge-logIn"
-                        @click="onLogInClick">{{$t('Bridge.logIn')}}</button>
+                        class="Bridge-connected"
+                        @click="onConnectClick">{{$t('Bridge.connectWallet')}}</button>
 
                     <ul class="Bridge-providersList" :class="{visible: isProvidersVisible}">
                         <li
@@ -94,7 +94,7 @@
                 </div>
 
                 <div
-                    class="Bridge-logInOverlay"
+                    class="Bridge-connectedOverlay"
                     @click="isProvidersVisible = false"
                     :class="{visible: isProvidersVisible}"></div>
 
@@ -114,14 +114,15 @@ import Vue from 'vue'
 import lodashDebounce from 'lodash.debounce';
 import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
-import { Metamask, WalletConnect } from '~/utils/providers';
+import { Metamask, WalletConnect, WalletLink } from '~/utils/providers';
 import { Provider } from '~/utils/providers/provider';
 import BridgeProcessor from '~/components/BridgeProcessor.vue'
 
 const PAIRS = ['eth', 'bsc'];
 const PROVIDERS = {
     'metamask': Metamask,
-    'walletConnect': WalletConnect
+    'walletConnect': WalletConnect,
+    'walletLink': WalletLink
 };
 
 declare interface IComponentData {
@@ -139,8 +140,8 @@ declare interface IComponentData {
     toAddress: string,
     provider: Provider | null,
 
-    isInterfaceBlocked: boolean,
-    isLoggedIn: boolean,
+    isTransferInProgress: boolean,
+    isConnected: boolean,
     isProvidersVisible: boolean
 }
 
@@ -172,8 +173,8 @@ export default Vue.extend({
             toAddress: '',
             provider: null,
 
-            isInterfaceBlocked: false,
-            isLoggedIn: false,
+            isTransferInProgress: false,
+            isConnected: false,
             isProvidersVisible: false
         }
     },
@@ -240,6 +241,12 @@ export default Vue.extend({
         },
         providersList(): string[] {
             return Object.keys(PROVIDERS);
+        },
+        isPairsBlocked(): boolean {
+            return this.isTransferInProgress || this.isConnected;
+        },
+        isInputsBlocked(): boolean {
+            return this.isTransferInProgress;
         }
     },
 
@@ -298,7 +305,7 @@ export default Vue.extend({
 
     methods: {
         onPairClick(switchDirection: boolean, toPair: string): void {
-            if (this.isInterfaceBlocked) {
+            if (this.isPairsBlocked) {
                 return
             }
 
@@ -333,7 +340,7 @@ export default Vue.extend({
                 this.toAddress = state.toAddress;
                 this.pair = state.pair;
 
-                this.isInterfaceBlocked = true;
+                this.isTransferInProgress = true;
             }
         },
         loadStateProcessor(): void {
@@ -377,11 +384,11 @@ export default Vue.extend({
 
             localStorage.removeItem('bridgeState');
         },
-        onInterfaceBlocked(isBlocked: boolean): void {
-            this.isInterfaceBlocked = isBlocked;
+        onTransferInProgress(isActive: boolean): void {
+            this.isTransferInProgress = isActive;
         },
         toggleFromTon(): void {
-            if (this.isInterfaceBlocked) {
+            if (this.isPairsBlocked) {
                 return
             }
             this.isFromTon = !this.isFromTon;
@@ -418,14 +425,17 @@ export default Vue.extend({
 
             this.gasPrice = gasPrice > 0 ? gasPrice : this.params.defaultGwei;
         },
-        onLogInClick(): void {
+        onConnectClick(): void {
             this.isProvidersVisible = true;
         },
         async onProviderClick(providerName: string): Promise<void> {
             this.isProvidersVisible = false;
 
             try {
-                this.provider = new PROVIDERS[providerName as keyof typeof PROVIDERS] as Provider;
+                this.provider = new PROVIDERS[providerName as keyof typeof PROVIDERS]({
+                    rpcEndpoint: this.params.rpcEndpoint,
+                    chainId: this.params.chainId
+                }) as Provider;
                 const result = await this.provider.connect();
 
                 if (!result) {
@@ -438,7 +448,7 @@ export default Vue.extend({
                 return;
             }
 
-            this.isLoggedIn = true;
+            this.isConnected = true;
 
             this.loadStateProcessor();
         }
@@ -521,6 +531,18 @@ export default Vue.extend({
         position: relative;
         flex: 1 0;
 
+        &.disabled {
+            color: gray;
+
+            @{r}-switcherTitle {
+                pointer-events: none;
+            }
+
+            a {
+                color: gray;
+            }
+        }
+
         &Title {
             position: relative;
             font-size: 36px;
@@ -532,10 +554,6 @@ export default Vue.extend({
                 font-size: 22px;
             }
 
-            &.disabled {
-                cursor: default;
-                pointer-events: none;
-            }
 
             span {
                 white-space: normal;
@@ -690,12 +708,12 @@ export default Vue.extend({
         margin-bottom: 10px;
     }
 
-    &-logInWrapper {
+    &-connectedWrapper {
         margin-top: 20px;
         position: relative;
     }
 
-    &-logInOverlay {
+    &-connectedOverlay {
         position: absolute;
         left: 0;
         top: 0;
@@ -714,7 +732,7 @@ export default Vue.extend({
         }
     }
 
-    &-logIn {
+    &-connected {
         -webkit-appearance: none;
         background-color: #1d98dc;
         border-radius: 25px;
@@ -792,6 +810,10 @@ export default Vue.extend({
 
                 &[data-icon="walletConnect"]:before {
                     background-image: url('~assets/pics/providers/walletConnect.svg');
+                }
+
+                &[data-icon="walletLink"]:before {
+                    background-image: url('~assets/pics/providers/walletlink.svg');
                 }
             }
         }

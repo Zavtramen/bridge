@@ -1,30 +1,29 @@
 import { Provider } from "../provider";
 import Web3 from 'web3';
 import { parseChainId } from '~/utils/helpers';
-import WalletConnectProvider from '@walletconnect/web3-provider';
+// import { WalletLink as WalletLinkProvider } from 'walletlink';
+import { PARAMS } from '~/utils/constants';
 
-export class WalletConnect implements Provider {
-    public title: string = 'WalletConnect';
+export class WalletLink implements Provider {
+    public title: string = 'WalletLink';
     public web3: Web3 | null = null;
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
     private provider: any = null;
 
-
     constructor(params: any) {
-        console.log({
-            qrcode: true,
-            rpc: {
-                [params.chainId]: params.rpcEndpoint
-            }
-        });
-        this.provider = new WalletConnectProvider({
-            qrcode: true,
-            rpc: {
-                [params.chainId]: params.rpcEndpoint
-            }
-        });
+        if (window.ethereum && window.ethereum.isCoinbaseWallet === true) {
+            this.provider = window.ethereum;
+        } else {
+            const walletLink = new window.WalletLinkBundle.default({
+                appName: PARAMS.appName,
+                appLogoUrl: PARAMS.appLogoUrl,
+                darkMode: false
+            });
+            console.log(params);
+            this.provider = walletLink.makeWeb3Provider(params.rpcEndpoint, params.chainId);
+        }
     }
 
     async connect(): Promise<boolean> {
@@ -35,7 +34,8 @@ export class WalletConnect implements Provider {
         try {
             await this.provider!.enable();
         } catch (e) {
-            if (e.message === 'User closed modal') { // soft error: User rejected the request.
+            console.log(e.message);
+            if (e.message === 'User denied account authorization') { // soft error: User rejected the request.
                 console.log(e.message);
                 return false;
             }

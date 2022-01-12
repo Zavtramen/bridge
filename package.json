@@ -1,5 +1,5 @@
 {
-  "name": "ton-evm-bridge",
+  "name": "ton-bridge",
   "version": "2.0.0",
   "private": true,
   "scripts": {

@@ -6,6 +6,7 @@ interface IParamsNetwork {
     tonCollectorAddress: string,
     tonMultisigAddress: string,
     tonCenterUrl: string,
+    rpcEndpoint: string,
     chainId: number,
     blocksConfirmations: number,
     defaultGwei: number,
@@ -14,8 +15,9 @@ interface IParamsNetwork {
 }
 
 interface IParams {
-    infuraId: string,
     tonTransferUrl: string,
+    appName: string,
+    appLogoUrl: string,
     networks: {
         [key: string]: {
             main: IParamsNetwork,

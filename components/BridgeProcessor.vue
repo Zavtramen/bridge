@@ -317,7 +317,7 @@ export default Vue.extend({
             immediate: true,
             handler(val): void {
                 this.$emit('state-changed');
-                this.$emit('interface-blocked', val > 0);
+                this.$emit('transfer-in-progress', val > 0);
             }
         }
     },
