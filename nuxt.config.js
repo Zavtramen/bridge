@@ -68,6 +68,6 @@ export default {
         // }
     },
     router: {
-        base: './'
+        base: '/bridge/'
     }
 }
