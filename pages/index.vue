@@ -243,7 +243,7 @@ export default Vue.extend({
             return Object.keys(PROVIDERS);
         },
         isPairsBlocked(): boolean {
-            return this.isTransferInProgress || this.isConnected;
+            return this.isTransferInProgress/* || this.isConnected*/;
         },
         isInputsBlocked(): boolean {
             return this.isTransferInProgress;
@@ -251,11 +251,18 @@ export default Vue.extend({
     },
 
     watch: {
-        isFromTon() {
+        isFromTon(): void {
             this.getPairGasFee__debounced();
         },
-        pair() {
+        async pair(newVal: string, oldVal: string): Promise<void> {
             this.getPairGasFee__debounced();
+
+            if (newVal !== oldVal && this.isConnected && this.provider) {
+                const isChanged = await this.provider.switchChain(this.params.chainId);
+                if (!isChanged) {
+                    this.pair = oldVal;
+                }
+            }
         }
     },
 
@@ -436,6 +443,7 @@ export default Vue.extend({
                     rpcEndpoint: this.params.rpcEndpoint,
                     chainId: this.params.chainId
                 }) as Provider;
+
                 const result = await this.provider.connect();
 
                 if (!result) {

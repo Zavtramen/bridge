@@ -12,4 +12,5 @@ export interface Provider {
     onChainChanged(chainId: number | string): void;
     onDisconnect(code: number, reason: string): void;
     onConnect(connectInfo: any): void;
+    switchChain(chainId: number): Promise<boolean>;
 }

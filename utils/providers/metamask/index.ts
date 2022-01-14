@@ -8,8 +8,11 @@ export class Metamask implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
+    private initialChainId: number = 0;
 
-    constructor() {
+    constructor(params: any) {
+        this.initialChainId = params.chainId;
+
         if (!window.ethereum) {
             throw new Error('Bridge.errors.installMetamask');
         }
@@ -28,6 +31,11 @@ export class Metamask implements Provider {
         }
 
         this.chainId = parseChainId(window.ethereum.networkVersion);
+
+        if (this.chainId !== this.initialChainId) {
+            await this.switchChain(this.initialChainId);
+        }
+
         this.isConnected = window.ethereum.isConnected();
         this.web3 = new Web3(window.ethereum);
 
@@ -63,5 +71,19 @@ export class Metamask implements Provider {
     onConnect(connectInfo: any): void {
         this.isConnected = true;
         console.log('connected');
+    }
+
+    async switchChain(chainId: number): Promise<boolean> {
+        try {
+            await window.ethereum
+                .request({
+                  method: 'wallet_switchEthereumChain',
+                  params: [{ chainId: '0x' + chainId.toString(16) }]
+                })
+        } catch (e) {
+            console.log(e.message);
+            return false;
+        }
+        return true;
     }
 }

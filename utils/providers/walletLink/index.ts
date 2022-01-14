@@ -10,9 +10,12 @@ export class WalletLink implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
+    private initialChainId: number = 0;
     private provider: any = null;
 
     constructor(params: any) {
+        this.initialChainId = params.chainId;
+
         if (window.ethereum && window.ethereum.isCoinbaseWallet === true) {
             this.provider = window.ethereum;
         } else {
@@ -21,7 +24,6 @@ export class WalletLink implements Provider {
                 appLogoUrl: PARAMS.appLogoUrl,
                 darkMode: false
             });
-            console.log(params);
             this.provider = walletLink.makeWeb3Provider(params.rpcEndpoint, params.chainId);
         }
     }
@@ -48,6 +50,11 @@ export class WalletLink implements Provider {
         this.myAddress = accounts[0];
 
         this.chainId = parseChainId(await this.web3.eth.net.getId());
+
+        if (this.chainId !== this.initialChainId) {
+            await this.switchChain(this.initialChainId);
+        }
+
         this.isConnected = true;
 
         this.provider!.on('accountsChanged', this.onAccountsChanged.bind(this));
@@ -82,5 +89,19 @@ export class WalletLink implements Provider {
     onConnect(connectInfo: any): void {
         this.isConnected = true;
         console.log('connected');
+    }
+
+    async switchChain(chainId: number): Promise<boolean> {
+        try {
+            await this.provider
+                .request({
+                  method: 'wallet_switchEthereumChain',
+                  params: [{ chainId: '0x' + chainId.toString(16) }]
+                })
+        } catch (e) {
+            console.log(e.message);
+            return false;
+        }
+        return true;
     }
 }

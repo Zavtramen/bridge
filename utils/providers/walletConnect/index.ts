@@ -2,6 +2,7 @@ import { Provider } from "../provider";
 import Web3 from 'web3';
 import { parseChainId } from '~/utils/helpers';
 import WalletConnectProvider from '@walletconnect/web3-provider';
+import { PARAMS } from '~/utils/constants';
 
 export class WalletConnect implements Provider {
     public title: string = 'WalletConnect';
@@ -9,21 +10,30 @@ export class WalletConnect implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
+    private initialChainId: number = 0;
     private provider: any = null;
 
 
     constructor(params: any) {
-        console.log({
-            qrcode: true,
-            rpc: {
-                [params.chainId]: params.rpcEndpoint
-            }
-        });
+        this.initialChainId = params.chainId;
+
+        interface IrpcObject {
+            [key: number]: string
+        }
+
+        var rpc: IrpcObject = {};
+
+        Object.keys(PARAMS.networks).forEach((netKey: string) => {
+            const net = PARAMS.networks[netKey as keyof typeof PARAMS.networks];
+            Object.keys(net).forEach((subnetKey: string) => {
+                const subnet = net[subnetKey as keyof typeof net];
+                rpc[subnet.chainId] = subnet.rpcEndpoint;
+            });
+        })
+
         this.provider = new WalletConnectProvider({
             qrcode: true,
-            rpc: {
-                [params.chainId]: params.rpcEndpoint
-            }
+            rpc
         });
     }
 
@@ -48,6 +58,11 @@ export class WalletConnect implements Provider {
         this.myAddress = accounts[0];
 
         this.chainId = parseChainId(await this.web3.eth.net.getId());
+
+        if (this.chainId !== this.initialChainId) {
+            await this.switchChain(this.initialChainId);
+        }
+
         this.isConnected = true;
 
         this.provider!.on('accountsChanged', this.onAccountsChanged.bind(this));
@@ -82,5 +97,20 @@ export class WalletConnect implements Provider {
     onConnect(connectInfo: any): void {
         this.isConnected = true;
         console.log('connected');
+    }
+
+    async switchChain(chainId: number): Promise<boolean> {
+        // try {
+        //     await this.provider
+        //         .request({
+        //           method: 'wallet_switchEthereumChain',
+        //           params: [{ chainId: '0x' + chainId.toString(16) }]
+        //         })
+        // } catch (e) {
+        //     console.log(e.message);
+        //     return false;
+        // }
+        // TODO currently wallet_switchEthereumChain is not supported
+        return true;
     }
 }
