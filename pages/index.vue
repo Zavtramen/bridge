@@ -221,8 +221,10 @@ export default Vue.extend({
         if (this.$route.query.testnet) {
             this.isTestnet = (this.$route.query.testnet as string).toLowerCase() === 'true';
         }
-        if (this.$route.query.recover) {
-            this.isRecover = (this.$route.query.recover as string).toLowerCase() === 'true';
+        if (this.$route.query.recover || this.$route.query.recovery) {
+            const isRecover = (this.$route.query.recover as string).toLowerCase() === 'true';
+            const isRecovery = (this.$route.query.recovery as string).toLowerCase() === 'true';
+            this.isRecover = isRecover || isRecovery;
         }
         if (this.$route.query.lt) {
             const lt = parseInt(this.$route.query.lt, 10);
