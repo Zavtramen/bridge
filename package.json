@@ -24,7 +24,7 @@
     "lodash.debounce": "4.0.8",
     "nuxt": "2.15.7",
     "nuxt-i18n": "6.28.1",
-    "tonweb": "0.0.25",
+    "tonweb": "0.0.26",
     "web3": "1.6.1"
   },
   "devDependencies": {

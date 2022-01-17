@@ -99,9 +99,9 @@
                     :class="{visible: isProvidersVisible}"></div>
 
                 <div class="Bridge-footer">
-                    v2.0,
-                    <a href="https://github.com/newton-blockchain/newton-blockchain.github.io/tree/master/bridge" target="_blank">{{$t('Bridge.sourceCode')}}</a>,
-                    <a href="https://toncoin.org/how-it-works/bridge" target="_blank">{{$t('Bridge.howItWorks')}}</a>,
+                    v2.02,
+                    <a href="https://github.com/ton-blockchain/bridge" target="_blank">{{$t('Bridge.sourceCode')}}</a>,
+                    <a href="https://ton.org/how-it-works/bridge" target="_blank">{{$t('Bridge.howItWorks')}}</a>,
                     <a href="https://github.com/newton-blockchain/TIPs/issues/24" target="_blank">{{$t('Bridge.documentation')}}</a>.
                 </div>
             </div>
