@@ -58,14 +58,21 @@
                 <div class="Bridge-pairFee">{{pairFee}}</div>
                 <div class="Bridge-bridgeFee">{{bridgeFee}}</div>
 
-                <ConnectWallet
-                    v-if="!isConnected"
+                <div class="Bridge-connectWrapper" v-if="!isConnected">
+                    <button
+                        class="Bridge-connectButton"
+                        @click="isWalletsPopupVisible = true">{{$t('Bridge.connectWallet')}}</button>
+                </div>
+
+                <WalletsPopup
+                    v-if="isWalletsPopupVisible"
                     :params="params"
                     @wallet-connected="onWalletConnected"
-                ></ConnectWallet>
+                    @cancel="isWalletsPopupVisible = false"
+                ></WalletsPopup>
 
                 <BridgeProcessor
-                    v-else
+                    v-if="isConnected"
                     ref="bridgeProcessor"
                     :key="pair"
                     :is-testnet="isTestnet"
@@ -84,12 +91,12 @@
                     @delete-state="deleteState"
                 ></BridgeProcessor>
 
-                <div class="Bridge-footer">
+                <footer class="Bridge-footer">
                     v2.02,
                     <a href="https://github.com/ton-blockchain/bridge" target="_blank">{{$t('Bridge.sourceCode')}}</a>,
                     <a href="https://ton.org/how-it-works/bridge" target="_blank">{{$t('Bridge.howItWorks')}}</a>,
                     <a href="https://github.com/newton-blockchain/TIPs/issues/24" target="_blank">{{$t('Bridge.documentation')}}</a>.
-                </div>
+                </footer>
             </div>
         </div>
     </main>
@@ -100,7 +107,7 @@ import Vue from 'vue'
 import lodashDebounce from 'lodash.debounce';
 import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
-import ConnectWallet from '~/components/ConnectWallet.vue';
+import WalletsPopup from '~/components/WalletsPopup.vue';
 import { Provider } from '~/utils/providers/provider';
 
 const PAIRS = ['eth', 'bsc'];
@@ -121,14 +128,15 @@ declare interface IComponentData {
     provider: Provider | null,
 
     isTransferInProgress: boolean,
-    isConnected: boolean
+    isConnected: boolean,
+    isWalletsPopupVisible: boolean
 }
 
 export default Vue.extend({
 
     components: {
         'BridgeProcessor': () => import('~/components/BridgeProcessor.vue'),
-        ConnectWallet
+        WalletsPopup
     },
 
     head(): object {
@@ -155,6 +163,7 @@ export default Vue.extend({
 
             isTransferInProgress: false,
             isConnected: false,
+            isWalletsPopupVisible: false
         }
     },
 
@@ -413,6 +422,7 @@ export default Vue.extend({
         onWalletConnected(provider: Provider): void {
             this.provider = provider;
             this.isConnected = true;
+            this.isWalletsPopupVisible = false;
             this.loadStateProcessor();
         }
     }
@@ -669,6 +679,27 @@ export default Vue.extend({
     &-bridgeFee {
         color: #666666;
         margin-bottom: 10px;
+    }
+
+    &-connectWrapper {
+        margin-top: 20px;
+        position: relative;
+    }
+
+    &-connectButton {
+        -webkit-appearance: none;
+        background-color: #1d98dc;
+        border-radius: 25px;
+        color: white;
+        font-size: 16px;
+        line-height: 19px;
+        border: none;
+        padding: 15px 35px 14px;
+
+        .isPointer &:hover,
+        .isTouch &:active {
+            background-color: #5fb8ea;
+        }
     }
 
 

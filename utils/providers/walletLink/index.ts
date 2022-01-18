@@ -22,6 +22,7 @@ export class WalletLink implements Provider {
                 await getScript('walletLink@2.4.2.js');
             } catch (err) {
                 console.log(err.message);
+                return false;
             }
 
             const walletLink = new window.WalletLinkBundle.default({
