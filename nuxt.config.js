@@ -23,9 +23,6 @@ export default {
         ],
         link: [
             { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
-        ],
-        script: [
-            { src: "/walletLink@2.4.2.js" }
         ]
     },
 

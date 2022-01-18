@@ -8,17 +8,12 @@ export class Metamask implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
-    private initialChainId: number = 0;
 
-    constructor(params: any) {
-        this.initialChainId = params.chainId;
-
+    async connect(params: any): Promise<boolean> {
         if (!window.ethereum) {
             throw new Error('Bridge.errors.installMetamask');
         }
-    }
 
-    async connect(): Promise<boolean> {
         try {
             const accounts = (await window.ethereum.send('eth_requestAccounts')).result;
             this.myAddress = accounts[0];
@@ -32,8 +27,8 @@ export class Metamask implements Provider {
 
         this.chainId = parseChainId(window.ethereum.networkVersion);
 
-        if (this.chainId !== this.initialChainId) {
-            await this.switchChain(this.initialChainId);
+        if (this.chainId !== params.chainId) {
+            await this.switchChain(params.chainId);
         }
 
         this.isConnected = window.ethereum.isConnected();

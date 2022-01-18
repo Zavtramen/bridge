@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import { parseChainId } from '~/utils/helpers';
 // import { WalletLink as WalletLinkProvider } from 'walletlink';
 import { PARAMS } from '~/utils/constants';
+import { getScript } from '~/utils/helpers';
 
 export class WalletLink implements Provider {
     public title: string = 'WalletLink';
@@ -10,27 +11,25 @@ export class WalletLink implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
-    private initialChainId: number = 0;
     private provider: any = null;
 
-    constructor(params: any) {
-        this.initialChainId = params.chainId;
-
+    async connect(params: any): Promise<boolean> {
         if (window.ethereum && window.ethereum.isCoinbaseWallet === true) {
             this.provider = window.ethereum;
         } else {
+
+            try {
+                await getScript('walletLink@2.4.2.js');
+            } catch (err) {
+                console.log(err.message);
+            }
+
             const walletLink = new window.WalletLinkBundle.default({
                 appName: PARAMS.appName,
                 appLogoUrl: PARAMS.appLogoUrl,
                 darkMode: false
             });
             this.provider = walletLink.makeWeb3Provider(params.rpcEndpoint, params.chainId);
-        }
-    }
-
-    async connect(): Promise<boolean> {
-        if (!this.provider) {
-            return false;
         }
 
         try {
@@ -51,8 +50,8 @@ export class WalletLink implements Provider {
 
         this.chainId = parseChainId(await this.web3.eth.net.getId());
 
-        if (this.chainId !== this.initialChainId) {
-            await this.switchChain(this.initialChainId);
+        if (this.chainId !== params.chainId) {
+            await this.switchChain(params.chainId);
         }
 
         this.isConnected = true;

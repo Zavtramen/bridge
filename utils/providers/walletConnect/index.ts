@@ -10,13 +10,10 @@ export class WalletConnect implements Provider {
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
-    private initialChainId: number = 0;
     private provider: any = null;
 
 
-    constructor(params: any) {
-        this.initialChainId = params.chainId;
-
+    async connect(params: any): Promise<boolean> {
         interface IrpcObject {
             [key: number]: string
         }
@@ -35,13 +32,6 @@ export class WalletConnect implements Provider {
             qrcode: true,
             rpc
         });
-    }
-
-    async connect(): Promise<boolean> {
-        if (!this.provider) {
-            return false;
-        }
-
         try {
             await this.provider!.enable();
         } catch (e) {
@@ -59,8 +49,8 @@ export class WalletConnect implements Provider {
 
         this.chainId = parseChainId(await this.web3.eth.net.getId());
 
-        if (this.chainId !== this.initialChainId) {
-            await this.switchChain(this.initialChainId);
+        if (this.chainId !== params.chainId) {
+            await this.switchChain(params.chainId);
         }
 
         this.isConnected = true;

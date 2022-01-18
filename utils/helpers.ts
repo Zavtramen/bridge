@@ -1,6 +1,39 @@
 import TonWeb from 'tonweb';
 
-export { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec, supportsLocalStorage, parseChainId };
+export {
+    getScript,
+    toUnit,
+    fromUnit,
+    getNumber,
+    getBool,
+    decToHex,
+    parseAddressFromDec,
+    supportsLocalStorage,
+    parseChainId
+};
+
+function getScript(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        let script: HTMLScriptElement = document.createElement('script');
+        const prior = document.getElementsByTagName('script')[0];
+        script.async = true;
+
+        script.onload = () => {
+            script.onload = null;
+            script.onerror = null;
+            setTimeout(resolve, 0);
+        };
+
+        script.onerror = () => {
+            script.onload = null;
+            script.onerror = null;
+            setTimeout(reject, 0);
+        };
+
+        script.src = src;
+        prior.parentNode!.insertBefore(script, prior);
+    })
+}
 
 function supportsLocalStorage(): boolean {
     try {
@@ -14,7 +47,7 @@ function parseChainId(chainId: string | number): number {
     if (typeof chainId === 'number') {
         return chainId;
     } if (typeof chainId === 'string') {
-        return parseInt(chainId, chainId.startsWith('0x') ? 16 : 10);
+        return parseInt(chainId, chainId.toLowerCase().startsWith('0x') ? 16 : 10);
     } else {
         return 0;
     }

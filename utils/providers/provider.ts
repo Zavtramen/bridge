@@ -7,7 +7,7 @@ export interface Provider {
     chainId: number;
     isConnected: boolean;
 
-    connect(): Promise<boolean>;
+    connect(params: any): Promise<boolean>;
     onAccountsChanged(accounts: Array<string>): void;
     onChainChanged(chainId: number | string): void;
     onDisconnect(code: number, reason: string): void;

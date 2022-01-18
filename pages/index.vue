@@ -58,8 +58,14 @@
                 <div class="Bridge-pairFee">{{pairFee}}</div>
                 <div class="Bridge-bridgeFee">{{bridgeFee}}</div>
 
+                <ConnectWallet
+                    v-if="!isConnected"
+                    :params="params"
+                    @wallet-connected="onWalletConnected"
+                ></ConnectWallet>
+
                 <BridgeProcessor
-                    v-if="isConnected"
+                    v-else
                     ref="bridgeProcessor"
                     :key="pair"
                     :is-testnet="isTestnet"
@@ -76,27 +82,7 @@
                     @reset-state="resetState"
                     @save-state="saveState"
                     @delete-state="deleteState"
-                /></BridgeProcessor>
-
-                <div class="Bridge-connectedWrapper" v-else>
-                    <button
-                        class="Bridge-connected"
-                        @click="onConnectClick">{{$t('Bridge.connectWallet')}}</button>
-
-                    <ul class="Bridge-providersList" :class="{visible: isProvidersVisible}">
-                        <li
-                            v-for="item in providersList"
-                            :key="item"
-                            @click="onProviderClick(item)">
-                            <button :data-icon="item">{{$t(`Bridge.providers.${item}`)}}</button>
-                        </li>
-                    </ul>
-                </div>
-
-                <div
-                    class="Bridge-connectedOverlay"
-                    @click="isProvidersVisible = false"
-                    :class="{visible: isProvidersVisible}"></div>
+                ></BridgeProcessor>
 
                 <div class="Bridge-footer">
                     v2.02,
@@ -114,16 +100,10 @@ import Vue from 'vue'
 import lodashDebounce from 'lodash.debounce';
 import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
-import { Metamask, WalletConnect, WalletLink } from '~/utils/providers';
+import ConnectWallet from '~/components/ConnectWallet.vue';
 import { Provider } from '~/utils/providers/provider';
-import BridgeProcessor from '~/components/BridgeProcessor.vue'
 
 const PAIRS = ['eth', 'bsc'];
-const PROVIDERS = {
-    'metamask': Metamask,
-    'walletConnect': WalletConnect,
-    'walletLink': WalletLink
-};
 
 declare interface IComponentData {
     getPairGasFee__debounced: () => void,
@@ -141,14 +121,14 @@ declare interface IComponentData {
     provider: Provider | null,
 
     isTransferInProgress: boolean,
-    isConnected: boolean,
-    isProvidersVisible: boolean
+    isConnected: boolean
 }
 
 export default Vue.extend({
 
     components: {
-        BridgeProcessor
+        'BridgeProcessor': () => import('~/components/BridgeProcessor.vue'),
+        ConnectWallet
     },
 
     head(): object {
@@ -175,7 +155,6 @@ export default Vue.extend({
 
             isTransferInProgress: false,
             isConnected: false,
-            isProvidersVisible: false
         }
     },
 
@@ -238,9 +217,6 @@ export default Vue.extend({
         },
         toPairs(): string[] {
             return ['ton', ...PAIRS.filter(i => i !== this.pair)];
-        },
-        providersList(): string[] {
-            return Object.keys(PROVIDERS);
         },
         isPairsBlocked(): boolean {
             return this.isTransferInProgress/* || this.isConnected*/;
@@ -434,32 +410,9 @@ export default Vue.extend({
 
             this.gasPrice = gasPrice > 0 ? gasPrice : this.params.defaultGwei;
         },
-        onConnectClick(): void {
-            this.isProvidersVisible = true;
-        },
-        async onProviderClick(providerName: string): Promise<void> {
-            this.isProvidersVisible = false;
-
-            try {
-                this.provider = new PROVIDERS[providerName as keyof typeof PROVIDERS]({
-                    rpcEndpoint: this.params.rpcEndpoint,
-                    chainId: this.params.chainId
-                }) as Provider;
-
-                const result = await this.provider.connect();
-
-                if (!result) {
-                    return;
-                }
-            } catch (e) {
-                const message = this.$te(e.message) ? this.$t(e.message) : e.message;
-                console.error(message);
-                alert(message);
-                return;
-            }
-
+        onWalletConnected(provider: Provider): void {
+            this.provider = provider;
             this.isConnected = true;
-
             this.loadStateProcessor();
         }
     }
@@ -718,116 +671,6 @@ export default Vue.extend({
         margin-bottom: 10px;
     }
 
-    &-connectedWrapper {
-        margin-top: 20px;
-        position: relative;
-    }
-
-    &-connectedOverlay {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-
-        transition: all 0 ease-in-out;
-        opacity: 0;
-        visibility: hidden;
-
-        &.visible {
-            transition: opacity 0.15s ease-in-out;
-            opacity: 1;
-            visibility: inherit;
-        }
-    }
-
-    &-connected {
-        -webkit-appearance: none;
-        background-color: #1d98dc;
-        border-radius: 25px;
-        color: white;
-        font-size: 16px;
-        line-height: 19px;
-        border: none;
-        padding: 15px 35px 14px;
-
-        .isPointer &:hover,
-        .isTouch &:active {
-            background-color: #5fb8ea;
-        }
-    }
-
-    &-providersList {
-        background: #FFF;
-        border-radius: 16px;
-        box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
-        box-sizing: border-box;
-        color: #303757;
-        font-size: 16px;
-        line-height: 20px;
-        list-style-type: none;
-        margin: 0;
-        padding: 18px 36px;
-        position: absolute;
-        left: 50%;
-        margin-left: -125px;
-        width: 250px;
-        bottom: 70px;
-        word-break: break-word;
-        white-space: normal;
-        text-align: left;
-        z-index: 2;
-
-        transition: all 0 ease-in-out;
-        opacity: 0;
-        visibility: hidden;
-
-        &.visible {
-            transition: opacity 0.15s ease-in-out;
-            opacity: 1;
-            visibility: inherit;
-        }
-
-        li {
-            button {
-                padding: 10px 0;
-                color: #303757;
-                font-weight: 700;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-
-                .isPointer &:hover,
-                .isTouch &:active {
-                    color: #1d98dc;
-                }
-
-                &:before {
-                    content: '';
-                    position: relative;
-                    background-size: contain;
-                    background-repeat: no-repeat;
-                    background-position: center;
-                    width: 32px;
-                    height: 32px;
-                    margin-right: 16px;
-                }
-
-                &[data-icon="metamask"]:before {
-                    background-image: url('~assets/pics/providers/metamask.svg');
-                }
-
-                &[data-icon="walletConnect"]:before {
-                    background-image: url('~assets/pics/providers/walletConnect.svg');
-                }
-
-                &[data-icon="walletLink"]:before {
-                    background-image: url('~assets/pics/providers/walletlink.svg');
-                }
-            }
-        }
-    }
 
     &-footer {
         margin-top: 100px;
