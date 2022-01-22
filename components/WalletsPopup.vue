@@ -13,7 +13,7 @@
                             :class="{ showLoader: isLoading && loadingProviderName === item}">{{$t(`Bridge.providers.${item}`)}}</button>
                     </li>
                 </ul>
-                <button class="WalletsPopup-panelClose" @click="close"></button>
+                <button class="WalletsPopup-panelClose" v-if="!uncancellable" @click="close"></button>
             </div>
 
             <div class="WalletsPopup-overlay" @click="close"></div>
@@ -31,7 +31,7 @@ const PROVIDERS = {
     'walletLink': 'WalletLink'
 };
 
-declare interface IComponentData {
+type ComponentData = {
     isLoading: boolean,
     loadingProviderName: string
 }
@@ -42,10 +42,14 @@ export default Vue.extend({
         params: {
             type: Object,
             required: true
+        },
+        uncancellable: {
+            type: Boolean,
+            default: false
         }
     },
 
-    data(): IComponentData {
+    data(): ComponentData {
         return {
             isLoading: false,
             loadingProviderName: ''
@@ -67,12 +71,13 @@ export default Vue.extend({
     },
 
     methods: {
-        onKeyDown(e): void {
+        onKeyDown(e: KeyboardEvent): void {
             if (e.keyCode === 27) {
                 this.close();
             }
         },
         close(): void {
+            if (this.uncancellable) return;
             if (this.isLoading) return;
             this.$emit('cancel');
         },
@@ -133,7 +138,7 @@ export default Vue.extend({
         box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
         box-sizing: border-box;
         padding: 24px 48px 24px 36px;
-        z-index: 2;
+        z-index: 4;
 
         ul {
             color: #303757;
@@ -192,14 +197,14 @@ export default Vue.extend({
                 &.showLoader:after {
                     content: '';
                     position: absolute;
-                    right: -24px;
-                    margin-top: -2px;
-                    width: 14px;
-                    height: 14px;
-                    border: 2px solid #333;
-                    border-right-color: white;
+                    right: -20px;
+                    margin-top: -1px;
+                    width: 12px;
+                    height: 12px;
+                    border: 3px solid #1d98dc;
+                    border-left: 3px solid transparent;
                     border-radius: 50%;
-                    animation: loading-animation-spin 1500ms infinite linear;
+                    animation: loading-animation-spin 2s infinite linear;
 
                     @keyframes loading-animation-spin {
                         to {
@@ -229,7 +234,7 @@ export default Vue.extend({
         top: 0;
         width: 100%;
         height: 100%;
-        z-index: 1;
+        z-index: 3;
         background: rgba(0, 0, 0, .25);
     }
 

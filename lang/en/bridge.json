@@ -1,6 +1,7 @@
 {
     "connectWallet": "Connect Wallet",
     "testnet": "TESTNET",
+    "historyPageTitle": "History",
     "providers": {
         "metamask": "Metamask",
         "walletConnect": "WalletConnect",
@@ -9,7 +10,7 @@
     "networks": {
         "ton": {
             "transactionCompleted": "TON transaction completed successfully",
-            "transactionSendAmount": "Please send <AMOUNT> <FROM_COIN>s to bridge smart-contract",
+            "transactionSendNote": "Click the link to open Ton wallet or copy-paste link to Send Popup in wallet",
             "transactionSendFromPersonal": "Send from your personal wallet.",
             "transactionSendNotFromExchanges": "Do not send directly from exchanges and bots!",
             "errors": {
@@ -77,13 +78,18 @@
             }
         }
     },
-    "amountOfTon": "Amount of TON:",
-    "addressInputLabel": "Address to receive in <NETWORK>:",
+    "sendToken": "Send Token",
+    "amountOfTon": "Amount of TON",
+    "addressInputLabel": "Address to receive in <NETWORK>",
+    "withComment": "With comment",
     "bridgeFeeAbove10": "Bridge fee - <FEE> TON",
     "bridgeFeeBelow10": "Bridge fee - 5 TON + 0.25% of amount",
     "sourceCode": "Source Code",
     "howItWorks": "How it works",
     "documentation": "Documentation",
+
+    "transferHistory": "Transfer History",
+    "disconnectWallet": "Disconnect Wallet",
 
     "transfer": "Transfer",
     "getToncoin": "Get TONCOIN",

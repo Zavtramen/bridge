@@ -3,22 +3,40 @@ import Web3 from 'web3';
 import { parseChainId } from '~/utils/helpers';
 import WalletConnectProvider from '@walletconnect/web3-provider';
 import { PARAMS } from '~/utils/constants';
+import { createNanoEvents, Emitter } from "nanoevents";
+
+interface Events {
+  disconnect: () => void
+}
 
 export class WalletConnect implements Provider {
+    public name: string = 'walletConnect';
     public title: string = 'WalletConnect';
     public web3: Web3 | null = null;
     public myAddress: string = '';
     public chainId: number = 0;
     public isConnected: boolean = false;
     private provider: any = null;
+    private emitter: Emitter;
 
+    constructor() {
+        this.emitter = createNanoEvents<Events>()
+        this.onAccountsChanged = this.onAccountsChanged.bind(this);
+        this.onChainChanged = this.onChainChanged.bind(this);
+        this.onDisconnect = this.onDisconnect.bind(this);
+        this.onConnect = this.onConnect.bind(this);
+    }
+
+    on<E extends keyof Events>(event: E, callback: Events[E]) {
+        return this.emitter.on(event, callback)
+    }
 
     async connect(params: any): Promise<boolean> {
-        interface IrpcObject {
+        type rpcObject = {
             [key: number]: string
         }
 
-        var rpc: IrpcObject = {};
+        var rpc: rpcObject = {};
 
         Object.keys(PARAMS.networks).forEach((netKey: string) => {
             const net = PARAMS.networks[netKey as keyof typeof PARAMS.networks];
@@ -55,10 +73,10 @@ export class WalletConnect implements Provider {
 
         this.isConnected = true;
 
-        this.provider!.on('accountsChanged', this.onAccountsChanged.bind(this));
-        this.provider!.on('chainChanged', this.onChainChanged.bind(this));
-        this.provider!.on('disconnect', this.onDisconnect.bind(this));
-        this.provider!.on('connect', this.onConnect.bind(this));
+        this.provider!.on('accountsChanged', this.onAccountsChanged);
+        this.provider!.on('chainChanged', this.onChainChanged);
+        this.provider!.on('disconnect', this.onDisconnect);
+        this.provider!.on('connect', this.onConnect);
 
         return true;
     }
@@ -82,6 +100,14 @@ export class WalletConnect implements Provider {
     onDisconnect(code: number, reason: string): void {
         this.isConnected = false;
         console.log('disconnected');
+
+        this.provider!.off('accountsChanged', this.onAccountsChanged);
+        this.provider!.off('chainChanged', this.onChainChanged);
+        this.provider!.off('disconnect', this.onDisconnect);
+        this.provider!.off('connect', this.onConnect);
+
+        this.emitter.emit('disconnect');
+        this.emitter.events = { };
     }
 
     onConnect(connectInfo: any): void {
@@ -102,5 +128,9 @@ export class WalletConnect implements Provider {
         // }
         // TODO currently wallet_switchEthereumChain is not supported
         return true;
+    }
+
+    disconnect(): void {
+        this.provider!.disconnect();
     }
 }

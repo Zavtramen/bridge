@@ -1,4 +1,4 @@
-export const PARAMS: IParams = {
+export const PARAMS: Params = {
     "appName": "TON Bridge",
     "appLogoUrl": "https://ton.org/bridge/favicon.ico",
     "tonTransferUrl": "ton://transfer/<BRIDGE_ADDRESS>?amount=<AMOUNT>&text=swapTo%23<TO_ADDRESS>",

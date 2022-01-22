@@ -2,6 +2,7 @@
     <div class="BridgeProcessor">
         <button
             class="BridgeProcessor-transfer"
+            :class="{ showLoader: isInitInProgress }"
             v-if="state.step === 0"
             @click="onTransferClick">{{$t('Bridge.transfer')}}</button>
 
@@ -11,9 +12,9 @@
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 1, 'pending': state.step === 1, 'done': state.step > 1}"></div>
                 <div class="BridgeProcessor-info-text" v-if="!getStepInfoText1.isOnlyText">
-                    {{ getStepInfoText1.sendAmount }}<br/>
+                    <div class="noteBefore">{{ getStepInfoText1.sendAmount }}</div>
                     <a :href="getStepInfoText1.url" target="_blank">{{ getStepInfoText1.url }}</a>
-                    <div class="note">{{ getStepInfoText1.sendFromPersonal }} <b>{{ getStepInfoText1.sendNotFromExchanges }}</b></div>
+                    <div class="noteAfter">{{ getStepInfoText1.sendFromPersonal }} <b>{{ getStepInfoText1.sendNotFromExchanges }}</b></div>
                 </div>
                 <div class="BridgeProcessor-info-text" v-else>{{ getStepInfoText1.text }}</div>
             </div>
@@ -67,7 +68,7 @@ import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
 
-declare interface IEthToTon {
+type EthToTon = {
     transactionHash: string,
     logIndex: number,
     to: {
@@ -80,7 +81,7 @@ declare interface IEthToTon {
     from: string
 }
 
-declare interface ISwapData {
+type SwapData = {
     type: string,
     receiver: string,
     amount: string,
@@ -94,14 +95,14 @@ declare interface ISwapData {
     }
 }
 
-declare interface IVoteEth {
+type VoteEth = {
     publicKey: string,
     r: string,
     s: string,
     v: number | undefined
 }
 
-declare interface IProviderData {
+type ProviderData = {
     oraclesTotal: number,
     blockNumber: number,
     wtonContract: Contract,
@@ -111,24 +112,25 @@ declare interface IProviderData {
     feeBase: typeof BN
 }
 
-declare interface IState {
+type State = {
     swapId: string,
     queryId: string,
     fromCurrencySent: boolean,
     toCurrencySent: boolean,
     step: number,
-    votes: IVoteEth[] | number[] | null,
-    swapData: ISwapData | null,
+    votes: VoteEth[] | number[] | null,
+    swapData: SwapData | null,
     createTime: number,
     blockNumber: number,
 }
 
-declare interface IComponentData {
+type ComponentData = {
     newBlockHeadersSubscription: any,
     updateStateInterval: null | ReturnType<typeof setInterval>,
-    providerData: IProviderData | null,
-    state: IState,
-    ethToTon: IEthToTon | null
+    providerData: ProviderData | null,
+    state: State,
+    ethToTon: EthToTon | null,
+    isInitInProgress: boolean
 }
 
 export default Vue.extend({
@@ -170,12 +172,13 @@ export default Vue.extend({
         }
     },
 
-    data(): IComponentData {
+    data(): ComponentData {
         return {
             newBlockHeadersSubscription: null,
             updateStateInterval: null,
             providerData: null,
             ethToTon: null,
+            isInitInProgress: false,
 
             state: {
                 swapId: '',
@@ -195,7 +198,7 @@ export default Vue.extend({
         netTypeName(): string {
             return this.isTestnet ? 'test' : 'main';
         },
-        params(): IParamsNetwork {
+        params(): ParamsNetwork {
             const pairParams = PARAMS.networks[this.pair];
             return pairParams[this.netTypeName as keyof typeof pairParams];
         },
@@ -230,13 +233,9 @@ export default Vue.extend({
                         .replace('<AMOUNT>', String(toUnit(this.amount)))
                         .replace('<TO_ADDRESS>', this.toAddress);
 
-                    const sendAmount = (this.$t(`Bridge.networks.ton.transactionSendAmount`) as string)
-                        .replace('<AMOUNT>', String(this.amount))
-                        .replace('<FROM_COIN>', this.fromCoin);
-
                     return {
                         isOnlyText: false,
-                        sendAmount,
+                        sendAmount: this.$t(`Bridge.networks.ton.transactionSendNote`) as string,
                         url,
                         sendFromPersonal: this.$t(`Bridge.networks.ton.transactionSendFromPersonal`) as string,
                         sendNotFromExchanges: this.$t(`Bridge.networks.ton.transactionSendNotFromExchanges`) as string
@@ -325,6 +324,7 @@ export default Vue.extend({
     mounted(): void {
         this.updateState();
         this.updateStateInterval = setInterval(this.updateState, 5000);
+        this.$emit('ready');
     },
 
     beforeDestroy(): void  {
@@ -345,12 +345,16 @@ export default Vue.extend({
 
             this.$emit('reset-state');
         },
-        async loadState(processingState: IState): Promise<void> {
+        async loadState(processingState: State): Promise<void> {
             if (!processingState) {
                  return;
             }
 
+            this.isInitInProgress = true;
+
             this.providerData = await this.initProvider();
+
+            this.isInitInProgress = false;
 
             if (!this.providerData) {
                 return;
@@ -400,7 +404,7 @@ export default Vue.extend({
                 }
             }
         },
-        getSwapTonToEthId(d: ISwapData): string {
+        getSwapTonToEthId(d: SwapData): string {
             let encodedParams;
 
             if (this.pair === 'eth') {
@@ -419,7 +423,7 @@ export default Vue.extend({
 
             return Web3.utils.sha3(encodedParams) as string;
         },
-        serializeEthToTon(ethToTon: IEthToTon) {
+        serializeEthToTon(ethToTon: EthToTon) {
             const bits = new TonWeb.boc.BitString(8 + 256 + 16 + 8 + 256 + 64);
             bits.writeUint(0, 8); // vote op
             bits.writeUint(new BN(ethToTon.transactionHash.substr(2), 16), 256);
@@ -429,7 +433,7 @@ export default Vue.extend({
             bits.writeUint(new BN(ethToTon.value), 64);
             return bits.array;
         },
-        getQueryId(ethToTon: IEthToTon): typeof BN {
+        getQueryId(ethToTon: EthToTon): typeof BN {
             const MULTISIG_QUERY_TIMEOUT = 30 * 24 * 60 * 60; // 30 days
             const VERSION = 2;
             const timeout = ethToTon.blockTime + MULTISIG_QUERY_TIMEOUT + VERSION;
@@ -451,7 +455,7 @@ export default Vue.extend({
             }
             return '0x' + hex;
         },
-        async getSwap(myAmount: number, myToAddress: string, myCreateTime: number): Promise<null | ISwapData> {
+        async getSwap(myAmount: number, myToAddress: string, myCreateTime: number): Promise<null | SwapData> {
             console.log('getTransactions', this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             const transactions = await this.providerData!.tonweb.provider.getTransactions(this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             console.log('ton txs', transactions.length);
@@ -481,7 +485,7 @@ export default Vue.extend({
                     const amount = new BN(amountHex, 16);
                     const senderAddress = new TonWeb.utils.Address(t.in_msg.source);
 
-                    const event: ISwapData = {
+                    const event: SwapData = {
                         type: 'SwapTonToEth',
                         receiver: destinationAddress,
                         amount: amount.toString(),
@@ -521,7 +525,7 @@ export default Vue.extend({
                 v
             }
         },
-        async getEthVote(voteId: string): Promise<null | IVoteEth[]> {
+        async getEthVote(voteId: string): Promise<null | VoteEth[]> {
             console.log('getEthVote ', voteId);
 
             const result = await this.providerData!.tonweb.provider.call(this.params.tonCollectorAddress, 'get_external_voting_data', [['num', voteId]]);
@@ -611,7 +615,7 @@ export default Vue.extend({
 
             let receipt;
             try {
-                let signatures = (this.state.votes! as IVoteEth[]).map(v => {
+                let signatures = (this.state.votes! as VoteEth[]).map(v => {
                     return {
                         signer: v.publicKey,
                         signature: ethers.utils.joinSignature({r: v.r, s: v.s, v: v.v})
@@ -695,7 +699,7 @@ export default Vue.extend({
                 console.error('transaction fail', receipt);
             }
         },
-        async initProvider(): Promise<IProviderData | null> {
+        async initProvider(): Promise<ProviderData | null> {
             const isProviderReady = await this.checkProviderIsReady();
 
             if (!isProviderReady) {
@@ -726,7 +730,7 @@ export default Vue.extend({
             const feeFactor = new BN(getNumber(bridgeData[6]));
             const feeBase = new BN(getNumber(bridgeData[7]));
 
-            const res: IProviderData = {
+            const res: ProviderData = {
                 blockNumber: 0,
                 wtonContract,
                 tonweb,
@@ -739,29 +743,55 @@ export default Vue.extend({
             return res;
         },
         async onTransferClick(): Promise<void> {
+            if (this.isInitInProgress) {
+                return;
+            }
+
+            this.isInitInProgress = true;
+
             if (isNaN(this.amount)) {
-                alert(this.$t('Bridge.errors.notValidAmount') as string);
+                this.$emit('error', {
+                    'input': 'amount',
+                    'message': this.$t('Bridge.errors.notValidAmount') as string
+                });
+                this.isInitInProgress = false;
                 return;
             }
             if (this.amount < 10) {
-                alert(this.$t('Bridge.errors.amountBelow10') as string);
+                this.$emit('error', {
+                    'input': 'amount',
+                    'message': this.$t('Bridge.errors.amountBelow10') as string
+                });
+                this.isInitInProgress = false;
                 return;
             }
 
             if (this.toAddress.toLowerCase() === this.params.wTonAddress.toLowerCase() ||
                 this.toAddress.toLowerCase() === this.params.tonBridgeAddress.toLowerCase()) {
-                alert(this.$t('Bridge.errors.needPersonalAddress') as string);
+                this.$emit('error', {
+                    'input': 'toAddress',
+                    'message': this.$t('Bridge.errors.needPersonalAddress') as string
+                });
+                this.isInitInProgress = false;
                 return;
             }
 
             if (this.isFromTon) {
                 if (!Web3.utils.isAddress(this.toAddress)) {
-                    alert(this.$t(`Bridge.networks.${this.pair}.errors.invalidAddress`) as string);
+                    this.$emit('error', {
+                        'input': 'toAddress',
+                        'message': this.$t(`Bridge.networks.${this.pair}.errors.invalidAddress`) as string
+                    });
+                    this.isInitInProgress = false;
                     return;
                 }
             } else {
                 if (!TonWeb.utils.Address.isValid(this.toAddress)) {
-                    alert(this.$t(`Bridge.networks.ton.errors.invalidAddress`) as string);
+                    this.$emit('error', {
+                        'input': 'toAddress',
+                        'message': this.$t('Bridge.networks.ton.errors.invalidAddress') as string
+                    });
+                    this.isInitInProgress = false;
                     return;
                 }
             }
@@ -770,6 +800,7 @@ export default Vue.extend({
                 this.providerData = await this.initProvider();
 
                 if (!this.providerData) {
+                    this.isInitInProgress = false;
                     return;
                 }
             }
@@ -777,10 +808,16 @@ export default Vue.extend({
             if (!this.isFromTon) {
                 const userErcBalance = fromUnit(Number(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call())));
                 if (this.amount > userErcBalance) {
-                    alert((this.$t('Bridge.errors.toncoinBalance') as string).replace('<BALANCE>', String(userErcBalance)));
+                    this.$emit('error', {
+                        'input': 'amount',
+                        'message': (this.$t('Bridge.errors.toncoinBalance') as string).replace('<BALANCE>', String(userErcBalance))
+                    });
+                    this.isInitInProgress = false;
                     return;
                 }
             }
+
+            this.isInitInProgress = false;
 
             this.state.createTime = Date.now();
             this.state.step = 1;
@@ -812,12 +849,36 @@ export default Vue.extend({
         line-height: 19px;
         border: none;
         padding: 15px 35px 14px;
-        margin-top: 20px;
+        white-space: nowrap;
 
         .isPointer &:hover,
         .isTouch &:active {
             background-color: #5fb8ea;
         }
+
+        &.showLoader:after {
+            content: '';
+            position: absolute;
+            transform: translate(8px, 3px);
+            width: 12px;
+            height: 12px;
+            border: 3px solid #fff;
+            border-left: 3px solid transparent;
+            border-radius: 50%;
+            animation: loading-animation-spin 2s infinite linear;
+
+            @keyframes loading-animation-spin {
+                to {
+                    transform: translate(8px, 3px) rotate(1turn);
+                }
+            }
+        }
+    }
+
+    &-getTonCoin,
+    &-done,
+    &-cancel {
+        margin-top: 20px;
     }
 
     &-infoWrapper {
@@ -834,6 +895,10 @@ export default Vue.extend({
         margin-top: 20px;
         display: flex;
         align-items: center;
+
+        &:first-child {
+            margin-top: 0;
+        }
     }
 
     &-info-icon {
@@ -881,7 +946,11 @@ export default Vue.extend({
             }
         }
 
-        .note {
+        .noteBefore {
+            margin-bottom: 8px;
+        }
+
+        .noteAfter {
             margin-top: 8px;
         }
     }
