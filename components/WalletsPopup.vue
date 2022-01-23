@@ -1,6 +1,8 @@
 <template>
     <transition name="WalletsPopupTransition" appear>
         <aside class="WalletsPopup" :class="{ isLoading }">
+            <div class="WalletsPopup-overlay" @click="close"></div>
+
             <div class="WalletsPopup-panel">
                 <ul>
                     <li
@@ -15,8 +17,6 @@
                 </ul>
                 <button class="WalletsPopup-panelClose" v-if="!uncancellable" @click="close"></button>
             </div>
-
-            <div class="WalletsPopup-overlay" @click="close"></div>
         </aside>
     </transition>
 </template>
@@ -130,6 +130,7 @@ export default Vue.extend({
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 2;
 
     &-panel {
         position: relative;
@@ -138,7 +139,6 @@ export default Vue.extend({
         box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
         box-sizing: border-box;
         padding: 24px 48px 24px 36px;
-        z-index: 4;
 
         ul {
             color: #303757;
@@ -234,7 +234,6 @@ export default Vue.extend({
         top: 0;
         width: 100%;
         height: 100%;
-        z-index: 3;
         background: rgba(0, 0, 0, .25);
     }
 
