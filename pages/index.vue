@@ -77,7 +77,7 @@
                 /></BridgeProcessor>
 
                 <div class="Bridge-footer">
-                    v2.03,
+                    v2.04,
                     <a href="https://github.com/ton-blockchain/bridge" target="_blank">{{$t('Bridge.sourceCode')}}</a>,
                     <a href="https://ton.org/how-it-works/bridge" target="_blank">{{$t('Bridge.howItWorks')}}</a>,
                     <a href="https://github.com/newton-blockchain/TIPs/issues/24" target="_blank">{{$t('Bridge.documentation')}}</a>.
@@ -222,9 +222,7 @@ export default Vue.extend({
             this.isTestnet = (this.$route.query.testnet as string).toLowerCase() === 'true';
         }
         if (this.$route.query.recover || this.$route.query.recovery) {
-            const isRecover = (this.$route.query.recover as string).toLowerCase() === 'true';
-            const isRecovery = (this.$route.query.recovery as string).toLowerCase() === 'true';
-            this.isRecover = isRecover || isRecovery;
+            this.isRecover = true;
         }
         if (this.$route.query.lt) {
             const lt = parseInt(this.$route.query.lt, 10);
