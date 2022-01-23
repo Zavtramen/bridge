@@ -2,8 +2,6 @@ import TonWeb from 'tonweb';
 
 export {
     getScript,
-    toUnit,
-    fromUnit,
     getNumber,
     getBool,
     decToHex,
@@ -51,14 +49,6 @@ function parseChainId(chainId: string | number): number {
     } else {
         return 0;
     }
-}
-
-function toUnit(n: number): number {
-    return n * 1e9; // todo: BN
-}
-
-function fromUnit(n: number): number {
-    return n / 1e9; // todo: BN
 }
 
 function getNumber(pair: Array<string>): number {

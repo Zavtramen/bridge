@@ -122,6 +122,7 @@
                 v-if="isConnected && walletsPopupState === 'closed'"
                 :provider="provider"
                 :is-testnet="isTestnet"
+                :disable-disconnect="isTransferInProgress"
             ></ConnectedMenu>
         </div>
     </div>
@@ -129,9 +130,10 @@
 
 <script lang="ts">
 import Vue from 'vue';
+import TonWeb from 'tonweb';
 import QRCode from 'easyqrcodejs'
 import lodashDebounce from 'lodash.debounce';
-import { supportsLocalStorage, toUnit } from '~/utils/helpers';
+import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 import CustomInput from '~/components/CustomInput.vue';
 import { Provider } from '~/utils/providers/provider';
@@ -305,8 +307,8 @@ export default Vue.extend({
             this.isTestnet = (this.$route.query.testnet as string).toLowerCase() === 'true';
         }
         if (this.$route.query.recover || this.$route.query.recovery) {
-            const isRecover = (this.$route.query.recover as string).toLowerCase() === 'true';
-            const isRecovery = (this.$route.query.recovery as string).toLowerCase() === 'true';
+            const isRecover = ((this.$route.query.recover || '') as string).toLowerCase() === 'true';
+            const isRecovery = ((this.$route.query.recovery || '') as string).toLowerCase() === 'true';
             this.isRecover = isRecover || isRecovery;
         }
         if (this.$route.query.lt) {
@@ -317,7 +319,7 @@ export default Vue.extend({
             this.hash = this.$route.query.hash as string;
         }
         if (this.$route.query.amount) {
-            const amount = parseFloat(this.$route.query.amount) / 1e9; //TODO refactor
+            const amount = parseFloat(TonWeb.utils.fromNano(this.$route.query.amount));
             this.amount = !amount || isNaN(amount) ? 0 : amount;
         }
         if (this.$route.query.toAddress) {
@@ -431,7 +433,7 @@ export default Vue.extend({
 
                 const url = PARAMS.tonTransferUrl
                     .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
-                    .replace('<AMOUNT>', String(toUnit(this.amount)))
+                    .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
                     .replace('<TO_ADDRESS>', this.toAddress);
 
                 console.log(url);

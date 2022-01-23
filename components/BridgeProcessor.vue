@@ -63,7 +63,7 @@ import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
-import { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
+import { getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
@@ -230,7 +230,7 @@ export default Vue.extend({
                 if (this.isFromTon) {
                     const url = PARAMS.tonTransferUrl
                         .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
-                        .replace('<AMOUNT>', String(toUnit(this.amount)))
+                        .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
                         .replace('<TO_ADDRESS>', this.toAddress);
 
                     return {
@@ -500,7 +500,7 @@ export default Vue.extend({
                     };
                     console.log(JSON.stringify(event));
 
-                    const myAmountNano = new BN(myAmount * 1e9);
+                    const myAmountNano = TonWeb.utils.toNano(myAmount);
                     const amountAfterFee = myAmountNano.sub(this.getFeeAmount(myAmountNano));
 
                     if (amount.eq(amountAfterFee) && event.receiver.toLowerCase() === myToAddress.toLowerCase()) {
@@ -659,7 +659,7 @@ export default Vue.extend({
             const addressTon = new TonWeb.utils.Address(toAddress);
             const wc = addressTon.wc;
             const hashPart = TonWeb.utils.bytesToHex(addressTon.hashPart);
-            const amountUnit = toUnit(amount);
+            const amountUnit = TonWeb.utils.toNano(amount).toNumber; // TODO, possible overflow
 
             let receipt;
 
@@ -806,7 +806,7 @@ export default Vue.extend({
             }
 
             if (!this.isFromTon) {
-                const userErcBalance = fromUnit(Number(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call())));
+                const userErcBalance = parseFloat(TonWeb.utils.fromNano(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call())));
                 if (this.amount > userErcBalance) {
                     this.$emit('error', {
                         'input': 'amount',

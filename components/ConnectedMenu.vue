@@ -3,7 +3,7 @@
         <div class="ConnectedMenu-address" :data-icon="provider.name">{{ address }}</div>
         <ul class="ConnectedMenu-list">
             <li><nuxt-link :to="historyUrl">{{$t(`Bridge.transferHistory`)}}</nuxt-link></li>
-            <li><button @click="onDisconnectClick">{{$t(`Bridge.disconnectWallet`)}}</button></li>
+            <li><button @click="onDisconnectClick" :disabled="disableDisconnect">{{$t(`Bridge.disconnectWallet`)}}</button></li>
         </ul>
     </aside>
 </template>
@@ -18,6 +18,10 @@ export default Vue.extend({
             required: true
         },
         isTestnet: {
+            type: Boolean,
+            default: false
+        },
+        disableDisconnect: {
             type: Boolean,
             default: false
         }
@@ -143,6 +147,12 @@ export default Vue.extend({
                 color: #303757;
                 font-weight: 700;
                 cursor: pointer;
+
+                &[disabled] {
+                    pointer-events: none;
+                    color: gray;
+                }
+
 
                 .isPointer &:hover,
                 .isTouch &:active {
