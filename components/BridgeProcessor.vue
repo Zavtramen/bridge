@@ -63,7 +63,7 @@ import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
-import { getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
+import { getNumber, getBool, decToHex, parseAddressFromDec, getLegacyQueryString } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
@@ -437,8 +437,9 @@ export default Vue.extend({
             const MULTISIG_QUERY_TIMEOUT = 30 * 24 * 60 * 60; // 30 days
             const VERSION = 2;
             const timeout = ethToTon.blockTime + MULTISIG_QUERY_TIMEOUT + VERSION;
+            const queryStr = ethToTon.blockHash + '_' + ethToTon.transactionHash + '_' + String(ethToTon.logIndex);
 
-            const query_id = Web3.utils.sha3(ethToTon.blockHash + '_' + ethToTon.transactionHash + '_' + String(ethToTon.logIndex))!.substr(2, 8); // get first 32 bit
+            const query_id = Web3.utils.sha3(getLegacyQueryString(queryStr))!.substr(2, 8); // get first 32 bit
 
             return new BN(timeout).mul(new BN(4294967296)).add(new BN(query_id, 16));
         },
@@ -659,7 +660,7 @@ export default Vue.extend({
             const addressTon = new TonWeb.utils.Address(toAddress);
             const wc = addressTon.wc;
             const hashPart = TonWeb.utils.bytesToHex(addressTon.hashPart);
-            const amountUnit = TonWeb.utils.toNano(amount).toNumber; // TODO, possible overflow
+            const amountUnit = TonWeb.utils.toNano(amount).toNumber(); // TODO, possible overflow
 
             let receipt;
 
