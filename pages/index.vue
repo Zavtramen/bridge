@@ -440,11 +440,11 @@ export default Vue.extend({
 
                 const options = {
                     text: url,
-                    width: 300,
-                    height: 300,
+                    width: 600,
+                    height: 600,
                     logo: require("assets/pics/gem@large.png"),
-                    logoWidth: 71,
-                    logoHeight: 71,
+                    logoWidth: 142,
+                    logoHeight: 142,
                     correctLevel: QRCode.CorrectLevel.L
                 };
                 new QRCode(this.$refs.qrcode, options);
@@ -558,9 +558,16 @@ export default Vue.extend({
         display: flex;
         justify-content: center;
         align-items: center;
+        padding: 36px;
 
         @media (max-width: 800px) {
             height: 300px;
+        }
+
+        /deep/ canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     }
 
