@@ -527,6 +527,10 @@ export default Vue.extend({
 @r: .Bridge;
 
 @{r} {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
     &-img {
         background-image: url('~assets/pics/swap.svg');
         background-size: contain;
