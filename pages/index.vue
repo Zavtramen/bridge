@@ -48,7 +48,7 @@
                 key="amountInner"
                 :disabled="isInputsBlocked"
                 :label="$t('Bridge.amountOfTon')"
-                :has-copy="true"
+                :has-copy="isFromTon && isTransferInProgress"
                 type="number"
                 :error="errorInput === 'amount' ? errorMessage : ''"
                 @changed="errorInput = ''"
@@ -59,7 +59,7 @@
                 key="toAddress"
                 :disabled="isInputsBlocked"
                 :label="addressInputLabel"
-                :has-copy="true"
+                :has-copy="isFromTon && isTransferInProgress"
                 type="text"
                 :error="errorInput === 'toAddress' ? errorMessage : ''"
                 @changed="errorInput = ''"
@@ -68,10 +68,10 @@
 
             <CustomInput
                 key="comment"
-                v-if="isFromTon"
+                v-if="isFromTon && isTransferInProgress"
                 :disabled="true"
                 :label="$t('Bridge.withComment')"
-                :has-copy="true"
+                :has-copy="isFromTon && isTransferInProgress"
                 type="text"
                 v-model="comment"
             ></CustomInput>
