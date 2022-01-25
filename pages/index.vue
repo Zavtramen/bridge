@@ -228,7 +228,7 @@ export default Vue.extend({
             const lt = parseInt(this.$route.query.lt, 10);
             this.lt = !lt || isNaN(lt) ? 0 : lt;
         }
-        if (this.$route.query.HASH) {
+        if (this.$route.query.hash) {
             this.hash = this.$route.query.hash as string;
         }
         if (this.$route.query.amount) {
