@@ -41,6 +41,7 @@
                 :disabled="true"
                 :label="$t('Bridge.sendToken')"
                 type="text"
+                :dropdown="[{ label: 'Toncoin', value: 'ton' }, { label: 'Litecoin', value: 'lth' }, { label: 'Bitcoin', value: 'bth' }]"
                 v-model="token"
             ></CustomInput>
 
@@ -193,7 +194,7 @@ export default Vue.extend({
 
             isFromTon: true,
             pair: 'eth',
-            token: '',
+            token: 'ton',
             amountInner: '',
             toAddress: '',
             provider: null,
@@ -339,8 +340,6 @@ export default Vue.extend({
                 this.pair = fromNetwork;
             }
         }
-
-        this.token = this.$t(`Bridge.networks.ton.${this.netTypeName}.coinShort`) as string;
     },
 
     mounted(): void {
