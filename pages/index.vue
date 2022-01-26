@@ -77,7 +77,7 @@
                 /></BridgeProcessor>
 
                 <div class="Bridge-footer">
-                    v2.04,
+                    v2.05,
                     <a href="https://github.com/ton-blockchain/bridge" target="_blank">{{$t('Bridge.sourceCode')}}</a>,
                     <a href="https://ton.org/how-it-works/bridge" target="_blank">{{$t('Bridge.howItWorks')}}</a>,
                     <a href="https://github.com/newton-blockchain/TIPs/issues/24" target="_blank">{{$t('Bridge.documentation')}}</a>.
