@@ -12,7 +12,7 @@
                         <button
                             :data-icon="item"
                             :disabled="isLoading"
-                            :class="{ showLoader: isLoading && loadingProviderName === item}">{{$t(`Bridge.providers.${item}`)}}</button>
+                            :class="{ showLoader: isLoading && loadingProviderName === item}">{{$t(`Bridge.providers.${item}`)}}<em></em></button>
                     </li>
                 </ul>
                 <button class="WalletsPopup-panelClose" v-if="!uncancellable" @click="close"></button>
@@ -135,15 +135,13 @@ export default Vue.extend({
     &-panel {
         position: relative;
         background: #FFF;
-        border-radius: 16px;
+        border-radius: 20px;
         box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
         box-sizing: border-box;
-        padding: 24px 48px 24px 36px;
+        padding: 53px 16px 24px 16px;
+        width: 260px;
 
         ul {
-            color: #303757;
-            font-size: 16px;
-            line-height: 20px;
             list-style-type: none;
             margin: 0;
             word-break: break-word;
@@ -151,16 +149,26 @@ export default Vue.extend({
             text-align: left;
         }
 
+        li + li {
+            margin-top: 10px;
+        }
+
         li {
             button {
                 position: relative;
-                padding: 10px 0;
+                padding: 0 16px;
                 color: #303757;
+                font-size: 15px;
+                line-height: 56px;
                 font-weight: 700;
                 cursor: pointer;
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                width: fit-content;
+                width: 100%;
+                border: 1px solid #ced0d9;
+                background: #edeef2;
+                border-radius: 16px;
 
                 &[disabled] {
                     pointer-events: none;
@@ -171,34 +179,33 @@ export default Vue.extend({
                     color: #1d98dc;
                 }
 
-                &:before {
+                em {
                     content: '';
                     position: relative;
                     background-size: contain;
                     background-repeat: no-repeat;
                     background-position: center;
-                    width: 32px;
-                    height: 32px;
-                    margin-right: 16px;
+                    width: 24px;
+                    height: 24px;
                 }
 
-                &[data-icon="metamask"]:before {
+                &[data-icon="metamask"] em {
                     background-image: url('~assets/pics/providers/metamask.svg');
                 }
 
-                &[data-icon="walletConnect"]:before {
+                &[data-icon="walletConnect"] em {
                     background-image: url('~assets/pics/providers/walletConnect.svg');
                 }
 
-                &[data-icon="walletLink"]:before {
+                &[data-icon="walletLink"] em {
                     background-image: url('~assets/pics/providers/walletlink.svg');
                 }
 
                 &.showLoader:after {
                     content: '';
                     position: absolute;
-                    right: -20px;
-                    margin-top: -1px;
+                    right: 50px;
+                    margin-top: 1px;
                     width: 12px;
                     height: 12px;
                     border: 3px solid #1d98dc;
