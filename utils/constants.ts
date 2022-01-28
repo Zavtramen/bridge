@@ -1,4 +1,6 @@
-export const PARAMS: IParams = {
+export const PARAMS: Params = {
+    "appName": "TON Bridge",
+    "appLogoUrl": "https://ton.org/bridge/favicon.ico",
     "tonTransferUrl": "ton://transfer/<BRIDGE_ADDRESS>?amount=<AMOUNT>&text=swapTo%23<TO_ADDRESS>",
     "networks": {
         "eth": {
@@ -10,6 +12,7 @@ export const PARAMS: IParams = {
                 "tonCollectorAddress": "EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5",
                 "tonMultisigAddress": "kf87m7_QrVM4uXAPCDM4DuF9Rj5Rwa5nHubwiQG96JmyAo-S",
                 "tonCenterUrl": "https://wallet.toncenter.com/api/v2/jsonRPC",
+                "rpcEndpoint": "https://mainnet.infura.io/v3/d29ee9db9b7b4bbc8fa5d28047a3ff47",
                 "chainId": 1,
                 "blocksConfirmations": 12,
                 "defaultGwei": 25,
@@ -24,6 +27,7 @@ export const PARAMS: IParams = {
                 "tonCollectorAddress": "UQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImg0k8",
                 "tonMultisigAddress": "kf9rkj49lXch15cbC7q-_b04HFF0L0XRyoKo-fEQU6sfL7I5",
                 "tonCenterUrl": "https://testnet.toncenter.com/api/v2/jsonRPC",
+                "rpcEndpoint": "https://ropsten.infura.io/v3/d29ee9db9b7b4bbc8fa5d28047a3ff47",
                 "chainId": 3,
                 "blocksConfirmations": 12,
                 "defaultGwei": 25,
@@ -40,6 +44,7 @@ export const PARAMS: IParams = {
                 "tonCollectorAddress": "EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW",
                 "tonMultisigAddress": "kf8OvX_5ynDgbp4iqJIvWudSEanWo0qAlOjhWHtga9u2Yo7j",
                 "tonCenterUrl": "https://wallet.toncenter.com/api/v2/jsonRPC",
+                "rpcEndpoint": "https://bsc-dataseed.binance.org/",
                 "chainId": 56,
                 "blocksConfirmations": 12,
                 "defaultGwei": 5,
@@ -54,6 +59,7 @@ export const PARAMS: IParams = {
                 "tonCollectorAddress": "EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW",
                 "tonMultisigAddress": "Ef8_p_O8fAYRU8pYkiKMh4ndQzw30SEnegy0m7vYN2unnR-W",
                 "tonCenterUrl": "https://testnet.toncenter.com/api/v2/jsonRPC",
+                "rpcEndpoint": "https://data-seed-prebsc-1-s1.binance.org:8545/",
                 "chainId": 97,
                 "blocksConfirmations": 12,
                 "defaultGwei": 5,

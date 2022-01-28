@@ -1,4 +1,4 @@
-interface IParamsNetwork {
+type ParamsNetwork = {
     getGasUrl: string,
     explorerUrl: string,
     wTonAddress: string,
@@ -6,6 +6,7 @@ interface IParamsNetwork {
     tonCollectorAddress: string,
     tonMultisigAddress: string,
     tonCenterUrl: string,
+    rpcEndpoint: string,
     chainId: number,
     blocksConfirmations: number,
     defaultGwei: number,
@@ -13,12 +14,14 @@ interface IParamsNetwork {
     coinsPerGweiFrom: number
 }
 
-interface IParams {
+type Params = {
     tonTransferUrl: string,
+    appName: string,
+    appLogoUrl: string,
     networks: {
         [key: string]: {
-            main: IParamsNetwork,
-            test: IParamsNetwork
+            main: ParamsNetwork,
+            test: ParamsNetwork
         }
     }
 }

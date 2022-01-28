@@ -32,7 +32,9 @@ declare module "tonweb" {
             BN: typeof BN,
             Address: typeof Address,
             base64ToBytes(base64: string): Uint8Array,
-            bytesToHex(buffer: Uint8Array): string
+            bytesToHex(buffer: Uint8Array): string,
+            toNano(amount: number | BN | string): BN,
+            fromNano(amount: number | BN | string): string
         }
 
         static Address: typeof Address
