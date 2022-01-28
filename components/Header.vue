@@ -1,30 +1,28 @@
 <template>
     <header class="Header" :class="{ isScrolled }">
-        <component
-            :is="!hasLogoLink ? 'div' : 'NuxtLink'"
-            :to="localePath('/')"
-            class="Header-logo"
-            :class="{ hasLogoLink }">
-            <span class="Header-logoIcon"></span>
-            <span class="Header-logoLabel">{{ $t(`Bridge.logoLabel`) }}</span>
-        </component>
-        <div class="Header-testnet">
-            <template v-if="isTestnet">
-                <span>{{ $t(`Bridge.testnetMessage`) }}</span>
-            </template>
-        </div>
-        <div class="Header-menu">
-            <template v-if="showMenu">
-                <nuxt-link :to="historyUrl" class="Header-menuHistory">{{$t(`Bridge.transferHistory`)}}</nuxt-link>
-                <div class="Header-menuWrapper">
-                    <div class="Header-menuAddress" :data-icon="provider.name"><span>{{ address }}</span></div>
-                    <ul class="Header-menuList">
-                        <li data-id="address"><span>{{ address }}</span></li>
-                        <li data-id="history"><nuxt-link :to="historyUrl">{{$t(`Bridge.transferHistory`)}}</nuxt-link></li>
-                        <li data-id="disconnect"><button @click="onDisconnectClick" :disabled="disableDisconnect">{{$t(`Bridge.disconnectWallet`)}}</button></li>
-                    </ul>
-                </div>
-            </template>
+        <div class="Header-testnet" v-if="isTestnet">{{ $t(`Bridge.testnetMessage`) }}</div>
+        <div class="Header-wrapper">
+            <component
+                :is="!hasLogoLink ? 'div' : 'NuxtLink'"
+                :to="localePath('/')"
+                class="Header-logo"
+                :class="{ hasLogoLink }">
+                <span class="Header-logoIcon"></span>
+                <span class="Header-logoLabel">{{ $t(`Bridge.logoLabel`) }}</span>
+            </component>
+            <div class="Header-menu">
+                <template v-if="showMenu">
+                    <nuxt-link :to="historyUrl" class="Header-menuHistory">{{$t(`Bridge.transferHistory`)}}</nuxt-link>
+                    <div class="Header-menuWrapper">
+                        <div class="Header-menuAddress" :data-icon="provider.name"><span>{{ address }}</span></div>
+                        <ul class="Header-menuList">
+                            <li data-id="address"><span>{{ address }}</span></li>
+                            <li data-id="history"><nuxt-link :to="historyUrl">{{$t(`Bridge.transferHistory`)}}</nuxt-link></li>
+                            <li data-id="disconnect"><button @click="onDisconnectClick" :disabled="disableDisconnect">{{$t(`Bridge.disconnectWallet`)}}</button></li>
+                        </ul>
+                    </div>
+                </template>
+            </div>
         </div>
     </header>
 </template>
@@ -118,25 +116,45 @@ export default Vue.extend({
     top: 0;
     left: 0;
     width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     z-index: 2;
-    padding: 44px 44px 20px;
-    transition: 0.25s transform, 0.25s border;
-    border-bottom: 1px solid transparent;
-    background: white;
 
-    @media (max-width: 560px) {
-        padding: 20px 24px 10px;
-    }
-
-    &.isScrolled {
-        transform: translateY(-20px);
+    &.isScrolled &-wrapper {
+        transform: translateY(-10px);
         border-bottom: 1px solid #ccc;
 
         @media (max-width: 560px) {
             transform: translateY(-10px);
+        }
+    }
+
+    &-testnet {
+        position: relative;
+        background: #e53935;
+        padding: 10px 16px;
+        z-index: 1;
+
+        text-align: center;
+        width: 100%;
+        color: white;
+
+        @media (max-width: 560px) {
+            padding: 8px 16px;
+            font-size: 14px;
+            line-height: 18px;
+        }
+    }
+
+    &-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 44px 10px;
+        transition: 0.25s transform, 0.25s border;
+        border-bottom: 1px solid transparent;
+        background: white;
+
+        @media (max-width: 560px) {
+            padding: 20px 24px 10px;
         }
     }
 
@@ -145,15 +163,15 @@ export default Vue.extend({
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        width: 250px;
+        // width: 250px;
 
-        @media (max-width: 800px) {
-            width: 160px;
-        }
+        // @media (max-width: 800px) {
+        //     width: 160px;
+        // }
 
-        @media (max-width: 560px) {
-            width: 40px;
-        }
+        // @media (max-width: 560px) {
+        //     width: 40px;
+        // }
 
 
         &Icon {
@@ -178,8 +196,12 @@ export default Vue.extend({
             font-size: 18px;
             transition: 0.15s color;
 
+            // @media (max-width: 560px) {
+            //     display: none;
+            // }
+
             @media (max-width: 560px) {
-                display: none;
+                font-size: 14px;
             }
         }
 
@@ -188,25 +210,20 @@ export default Vue.extend({
         }
     }
 
-    &-testnet {
-        font-size: 15px;
-        text-align: center;
-    }
-
     &-menu {
         position: relative;
-        width: 250px;
         display: flex;
         justify-content: flex-end;
         align-items: center;
+        // width: 250px;
 
-        @media (max-width: 800px) {
-            width: 160px;
-        }
+        // @media (max-width: 800px) {
+        //     width: 160px;
+        // }
 
-        @media (max-width: 560px) {
-            width: 40px;
-        }
+        // @media (max-width: 560px) {
+        //     width: 40px;
+        // }
 
         &History {
             position: relative;
@@ -233,7 +250,6 @@ export default Vue.extend({
             align-items: center;
             width: fit-content;
             font-weight: 700;
-            font-size: 15px;
 
             .isPointer &:hover,
             .isTouch &:active {
@@ -243,9 +259,11 @@ export default Vue.extend({
             span {
                 display: inline-block;
                 margin-left: 10px;
+                font-size: 15px;
 
                 @media (max-width: 560px) {
-                    display: none;
+                    // display: none;
+                    font-size: 13px;
                 }
             }
 
@@ -316,18 +334,18 @@ export default Vue.extend({
                 &[data-id="address"] {
                     display: none;
 
-                    span {
-                        display: inline-block;
-                        padding: 10px 0 2px;
-                        color: #303757;
-                        font-weight: 700;
-                        font-size: 11px;
-                        color: #757575;
-                    }
+                    // span {
+                    //     display: inline-block;
+                    //     padding: 10px 0 2px;
+                    //     color: #303757;
+                    //     font-weight: 700;
+                    //     font-size: 11px;
+                    //     color: #757575;
+                    // }
 
-                    @media (max-width: 560px) {
-                        display: list-item;
-                    }
+                    // @media (max-width: 560px) {
+                    //     display: list-item;
+                    // }
                 }
 
                 &[data-id="history"] {

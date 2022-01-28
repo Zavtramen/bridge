@@ -63,6 +63,7 @@
         <button
             v-if="isGetTonCoinVisible"
             class="BridgeProcessor-getTonCoin"
+            :class="{ showLoader: isMintingInProgress }"
             @click="mint">{{$t('Bridge.getToncoin')}}</button>
 
         <button
@@ -149,6 +150,7 @@ type ComponentData = {
     state: State,
     ethToTon: EthToTon | null,
     isInitInProgress: boolean,
+    isMintingInProgress: boolean,
     isQRCodeShown: boolean
 }
 
@@ -202,6 +204,7 @@ export default Vue.extend({
             providerData: null,
             ethToTon: null,
             isInitInProgress: false,
+            isMintingInProgress: false,
             isQRCodeShown: false,
 
             state: {
@@ -689,11 +692,16 @@ export default Vue.extend({
             return true;
         },
         async mint(): Promise<any> {
+            if (this.isMintingInProgress) {
+                return;
+            }
+
             const isProviderReady = await this.checkProviderIsReady();
 
             if (!isProviderReady) {
                 return;
             }
+            this.isMintingInProgress = true;
 
             let receipt;
             try {
@@ -713,12 +721,16 @@ export default Vue.extend({
                 receipt = await this.providerData!.wtonContract.methods.voteForMinting(this.state.swapData!, signatures).send({from: this.provider.myAddress})
                     .on('transactionHash', () => {
                         this.state.toCurrencySent = true;
+                        this.isMintingInProgress = false;
                         this.deleteState();
                     });
             } catch (e) {
                 console.error(e);
+                this.isMintingInProgress = false;
                 return;
             }
+
+            this.isMintingInProgress = false;
 
             if (receipt.status) {
                 this.state.step = 5;
@@ -902,6 +914,10 @@ export default Vue.extend({
         &[disabled] {
             pointer-events: none;
             background-color: #AAAAAA;
+        }
+
+        &.showLoader {
+            pointer-events: none;
         }
 
         @media (max-width: 800px) {
