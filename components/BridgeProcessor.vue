@@ -2,19 +2,41 @@
     <div class="BridgeProcessor">
         <button
             class="BridgeProcessor-transfer"
+            :disabled="!isInputsValid"
             :class="{ showLoader: isInitInProgress }"
             v-if="state.step === 0"
             @click="onTransferClick">{{$t('Bridge.transfer')}}</button>
 
-        <div class="BridgeProcessor-infoWrapper" v-else>
+        <button
+            v-if="isCancelVisible"
+            class="BridgeProcessor-cancel"
+            @click="onCancelClick">{{$t('Bridge.cancel')}}</button>
+
+        <div class="BridgeProcessor-infoWrapper" v-if="state.step > 0">
             <div class="BridgeProcessor-infoLine">
                 <div
                     class="BridgeProcessor-info-icon"
                     :class="{'none': state.step < 1, 'pending': state.step === 1, 'done': state.step > 1}"></div>
                 <div class="BridgeProcessor-info-text" v-if="!getStepInfoText1.isOnlyText">
-                    <div class="noteBefore">{{ getStepInfoText1.sendAmount }}</div>
-                    <a :href="getStepInfoText1.url" target="_blank">{{ getStepInfoText1.url }}</a>
-                    <div class="noteAfter">{{ getStepInfoText1.sendFromPersonal }} <b>{{ getStepInfoText1.sendNotFromExchanges }}</b></div>
+                    <div class="BridgeProcessor-info-text-send">
+                        <div>
+                            {{ getStepInfoText1.send1 }}
+                            <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.amount }}</button>
+                            {{ getStepInfoText1.send2 }}<br/>
+                            <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.toAddress }}</button><br/>
+                            {{ getStepInfoText1.withComment }}<br/>
+                            <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.comment }}</button><br/>
+                        </div>
+
+                        <div class="BridgeProcessor-info-text-send-buttons">
+                            <a :href="getStepInfoText1.openWalletUrl" class="BridgeProcessor-info-text-openWallet" target="_blank">{{ getStepInfoText1.openWalletLabel }}</a>
+
+                            <button class="BridgeProcessor-info-text-generateQRCode" v-if="!isQRCodeShown" @click="generateQRCode">{{ getStepInfoText1.generateQRCode }}</button>
+                            <div class="BridgeProcessor-info-text-scanQRCode" v-if="isQRCodeShown">{{ getStepInfoText1.scanQRCode }}</div>
+
+                            <div class="BridgeProcessor-info-text-QRCode" ref="qrcode" v-show="isQRCodeShown"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="BridgeProcessor-info-text" v-else>{{ getStepInfoText1.text }}</div>
             </div>
@@ -47,11 +69,6 @@
             v-if="isDoneVisible"
             class="BridgeProcessor-done"
             @click="onDoneClick">{{$t('Bridge.done')}}</button>
-
-        <button
-            v-if="isCancelVisible"
-            class="BridgeProcessor-cancel"
-            @click="onCancelClick">{{$t('Bridge.cancel')}}</button>
     </div>
 </template>
 
@@ -59,6 +76,7 @@
 import Vue from 'vue'
 import Web3 from 'web3';
 import TonWeb from 'tonweb';
+import QRCode from 'easyqrcodejs';
 import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
@@ -130,7 +148,8 @@ type ComponentData = {
     providerData: ProviderData | null,
     state: State,
     ethToTon: EthToTon | null,
-    isInitInProgress: boolean
+    isInitInProgress: boolean,
+    isQRCodeShown: boolean
 }
 
 export default Vue.extend({
@@ -169,7 +188,11 @@ export default Vue.extend({
         provider: {
             type: Object,
             required: true
-        }
+        },
+        isInputsValid: {
+            type: Boolean,
+            required: true
+        },
     },
 
     data(): ComponentData {
@@ -179,6 +202,7 @@ export default Vue.extend({
             providerData: null,
             ethToTon: null,
             isInitInProgress: false,
+            isQRCodeShown: false,
 
             state: {
                 swapId: '',
@@ -221,10 +245,6 @@ export default Vue.extend({
                 this.$t(`Bridge.networks.ton.${this.netTypeName}.coinShort`) as string :
                 this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.coinShort`) as string;
         },
-        toNetwork(): string {
-            const pair = this.isFromTon ? this.pair : 'ton';
-            return this.$t(`Bridge.networks.${pair}.${this.netTypeName}.name`) as string;
-        },
         getStepInfoText1(): object {
             if (this.state.step === 1) {
                 if (this.isFromTon) {
@@ -235,10 +255,16 @@ export default Vue.extend({
 
                     return {
                         isOnlyText: false,
-                        sendAmount: this.$t(`Bridge.networks.ton.transactionSendNote`) as string,
-                        url,
-                        sendFromPersonal: this.$t(`Bridge.networks.ton.transactionSendFromPersonal`) as string,
-                        sendNotFromExchanges: this.$t(`Bridge.networks.ton.transactionSendNotFromExchanges`) as string
+                        send1: this.$t(`Bridge.networks.ton.transactionSend1`) as string,
+                        amount: String(this.amount),
+                        send2: this.$t(`Bridge.networks.ton.transactionSend2`) as string,
+                        toAddress: this.params.tonBridgeAddress,
+                        withComment: this.$t(`Bridge.networks.ton.transactionSendComment`) as string,
+                        comment: 'swapTo#' + this.toAddress,
+                        openWalletLabel: this.$t(`Bridge.networks.ton.openWallet`) as string,
+                        openWalletUrl: url,
+                        generateQRCode: this.isQRCodeShown ? '' : this.$t(`Bridge.networks.ton.generateQRCode`) as string,
+                        scanQRCode: this.isQRCodeShown ? this.$t(`Bridge.networks.ton.scanQRCode`) as string : ''
                     }
                 } else {
                     return {
@@ -303,10 +329,11 @@ export default Vue.extend({
                 return (this.$t(`Bridge.coinsSent`) as string)
                     .replace('<TO_COIN>', this.toCoin);
             } else {
-                return 'Get ' + this.toCoin + 's in ' + this.toNetwork;
+                const pair = this.isFromTon ? this.pair : 'ton';
+
                 return (this.$t(`Bridge.getCoins`) as string)
                     .replace('<TO_COIN>', this.toCoin)
-                    .replace('<TO_NETWORK>', this.toNetwork);
+                    .replace('<TO_NETWORK>', this.$t(`Bridge.networks.${pair}.${this.netTypeName}.name`) as string);
             }
         }
     },
@@ -332,6 +359,54 @@ export default Vue.extend({
     },
 
     methods: {
+        onCopyClick(e: MouseEvent): void {
+            const target = e.target;
+
+            let timeout1, timeout2;
+            const triggerClass = (className) => {
+                target.classList.remove(className);
+                clearTimeout(timeout1);
+                clearTimeout(timeout2);
+
+                timeout1 = setTimeout(() => {
+                    target.classList.add(className);
+                }, 17);
+
+                timeout2 = setTimeout(() => {
+                    target.classList.remove(className);
+                }, 500);
+            }
+
+            if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                const value = '';
+                navigator.clipboard.writeText(target.innerText).then(function() {
+                    triggerClass('success');
+                }, function() {
+                    triggerClass('failure');
+                });
+            } else {
+                triggerClass('failure');
+            }
+        },
+        generateQRCode(): void {
+            this.isQRCodeShown = true;
+
+            const url = PARAMS.tonTransferUrl
+                .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
+                .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
+                .replace('<TO_ADDRESS>', this.toAddress);
+
+            const options = {
+                text: url,
+                width: 600,
+                height: 600,
+                logo: require("assets/pics/gem@large.png"),
+                logoWidth: 142,
+                logoHeight: 142,
+                correctLevel: QRCode.CorrectLevel.L
+            };
+            new QRCode(this.$refs.qrcode, options);
+        },
         resetState(): void {
             this.state.swapId = '';
             this.state.queryId = '0';
@@ -342,6 +417,8 @@ export default Vue.extend({
             this.state.swapData = null;
             this.state.createTime = 0;
             this.state.blockNumber = 0;
+
+            this.isQRCodeShown = false;
 
             this.$emit('reset-state');
         },
@@ -591,7 +668,7 @@ export default Vue.extend({
 
                 if (this.provider.chainId !== this.params.chainId) {
                     const error = (this.$t('Bridge.errors.wrongProviderNetwork') as string)
-                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.full`) as string)
+                        .replace('<NETWORK>', this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.name`) as string)
                         .replace('<PROVIDER>', this.provider.title)
                     throw new Error(error);
                 }
@@ -601,7 +678,11 @@ export default Vue.extend({
                 }
             } catch (e) {
                 console.error(e.message);
-                alert(e.message);
+                this.$nuxt.$emit('alert', {
+                    title: this.$t('Bridge.errors.alertTitleError') as string,
+                    message: e.message,
+                    buttonLabel: this.$t('Bridge.errors.alertButtonClose') as string
+                });
                 return false;
             }
 
@@ -750,51 +831,9 @@ export default Vue.extend({
 
             this.isInitInProgress = true;
 
-            if (isNaN(this.amount)) {
-                this.$emit('error', {
-                    'input': 'amount',
-                    'message': this.$t('Bridge.errors.notValidAmount') as string
-                });
+            if (!this.isInputsValid) {
                 this.isInitInProgress = false;
                 return;
-            }
-            if (this.amount < 10) {
-                this.$emit('error', {
-                    'input': 'amount',
-                    'message': this.$t('Bridge.errors.amountBelow10') as string
-                });
-                this.isInitInProgress = false;
-                return;
-            }
-
-            if (this.toAddress.toLowerCase() === this.params.wTonAddress.toLowerCase() ||
-                this.toAddress.toLowerCase() === this.params.tonBridgeAddress.toLowerCase()) {
-                this.$emit('error', {
-                    'input': 'toAddress',
-                    'message': this.$t('Bridge.errors.needPersonalAddress') as string
-                });
-                this.isInitInProgress = false;
-                return;
-            }
-
-            if (this.isFromTon) {
-                if (!Web3.utils.isAddress(this.toAddress)) {
-                    this.$emit('error', {
-                        'input': 'toAddress',
-                        'message': this.$t(`Bridge.networks.${this.pair}.errors.invalidAddress`) as string
-                    });
-                    this.isInitInProgress = false;
-                    return;
-                }
-            } else {
-                if (!TonWeb.utils.Address.isValid(this.toAddress)) {
-                    this.$emit('error', {
-                        'input': 'toAddress',
-                        'message': this.$t('Bridge.networks.ton.errors.invalidAddress') as string
-                    });
-                    this.isInitInProgress = false;
-                    return;
-                }
             }
 
             if (!this.providerData) {
@@ -841,20 +880,33 @@ export default Vue.extend({
     &-transfer,
     &-getTonCoin,
     &-done,
-    &-cancel {
+    &-cancel,
+    &-info-text-openWallet {
         -webkit-appearance: none;
-        background-color: #1d98dc;
+        background-color: #1D98DC;
+        display: inline-block;
         border-radius: 25px;
         color: white;
-        font-size: 16px;
+        font-size: 15px;
+        font-weight: 700;
         line-height: 19px;
         border: none;
-        padding: 15px 35px 14px;
+        padding: 16px 35px 15px;
         white-space: nowrap;
 
         .isPointer &:hover,
         .isTouch &:active {
             background-color: #5fb8ea;
+        }
+
+        &[disabled] {
+            pointer-events: none;
+            background-color: #AAAAAA;
+        }
+
+        @media (max-width: 800px) {
+            font-size: 14px;
+            padding: 14px 32px 13px;
         }
 
         &.showLoader:after {
@@ -876,83 +928,223 @@ export default Vue.extend({
         }
     }
 
-    &-getTonCoin,
-    &-done,
     &-cancel {
-        margin-top: 20px;
+        margin-top: -10px;
+        margin-bottom: 40px;
+        background-color: white;
+        color: #e53935;
+        box-shadow: inset 0 0 0 2px #e53935;
+
+        .isPointer &:hover,
+        .isTouch &:active {
+            background-color: rgba(#e53935, 0.1);
+        }
+    }
+
+    &-getTonCoin,
+    &-done {
+        margin-top: 30px;
     }
 
     &-infoWrapper {
         text-align: left;
         width: fit-content;
-        font-size: 18px;
+        font-size: 17px;
+        line-height: 25px;
 
         @media (max-width: 800px) {
-            font-size: 16px;
+            font-size: 15px;
+            line-height: 23px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 14px;
+            line-height: 21px;
         }
     }
 
     &-infoLine {
-        margin-top: 20px;
-        display: flex;
-        align-items: center;
+        position: relative;
+        margin-top: 28px;
 
         &:first-child {
             margin-top: 0;
         }
+
+        @media (max-width: 550px) {
+            padding-left: 28px;
+            margin-top: 20px;
+        }
     }
 
     &-info-icon {
-        flex-shrink: 0;
+        position: absolute;
+        left: -28px;
+        margin-top: 4px;
+        width: 18px;
+        height: 18px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+
+        @media (max-width: 550px) {
+            left: 0;
+        }
 
         &.done {
-            width: 18px;
-            height: 18px;
-            background-image: url('~assets/pics/done.svg');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            margin-right: 10px;
+            background-image: url('~assets/pics/progress/done.svg');
         }
 
         &.pending {
-            width: 12px;
-            height: 12px;
-            border: 3px solid #1d98dc;
-            border-left: 3px solid transparent;
-            border-radius: 50%;
+            background-image: url('~assets/pics/progress/loader.svg');
             animation: rotating 2s linear infinite;
-            margin-right: 13px;
-            margin-left: 3px;
         }
 
         &.none {
-            width: 8px;
-            height: 8px;
-            margin-left: 4px;
-            margin-right: 14px;
-            background-color: #1d98dc;
-            border-radius: 50%;
+            background-image: url('~assets/pics/progress/dot.svg');
         }
     }
 
-    &-info-text {
-        a {
-            color: #1d98dc;
-            text-decoration: underline;
+    &-info-text-send {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        text-align: left;
+        line-height: 27px;
 
-            .isPointer &:hover,
-            .isTouch &:active {
-                text-decoration: none;
+        @media (max-width: 800px) {
+            line-height: 25px;
+        }
+
+        @media (max-width: 400px) {
+            line-height: 23px;
+        }
+    }
+
+    &-info-text-send-buttons {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+
+        @media (max-width: 550px) {
+            padding-right: 28px;
+        }
+    }
+
+    &-info-text-openWallet {
+        margin: 22px 0 20px;
+    }
+
+    &-info-text-copy,
+    &-info-text-generateQRCode {
+        color: #1D98DC;
+        text-decoration: underline;
+        -webkit-appearance: none;
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        letter-spacing: -0.3px;
+
+        .isPointer &:hover,
+        .isTouch &:active {
+            text-decoration: none;
+        }
+    }
+
+    &-info-text-generateQRCode,
+    &-info-text-scanQRCode {
+        font-size: 15px;
+
+        @media (max-width: 800px) {
+            font-size: 14px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 13px;
+        }
+    }
+
+    &-info-text-scanQRCode {
+        margin-top: -3px;
+        color: #222222;
+    }
+
+    &-info-text-copy {
+        position: relative;
+        padding-left: 18px;
+        word-break: break-word;
+
+        &:before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            display: inline-block;
+            height: 20px;
+            width: 20px;
+            background-image: url('~assets/pics/copy.svg');
+            background-repeat: no-repeat;
+            background-size: contain;
+            top: 1px;
+        }
+
+        &.success:after {
+            content: 'Copied';
+        }
+
+        &.failure:after {
+            background: #e53935;
+            content: 'Failed';
+        }
+
+        &.success:after,
+        &.failure:after {
+            content: 'Copied';
+            position: absolute;
+            padding: 4px;
+            font-size: 12px;
+            color: white;
+            background: #1D98DC;
+            border-radius: 4px;
+            top: -22px;
+            left: 7px;
+            white-space: nowrap;
+            animation: fade-tooltip 0.45s linear both;
+
+            @keyframes fade-tooltip {
+                0% {
+                    transform: translate(-50%, 0);
+                    opacity: 0;
+                }
+                20% {
+                    opacity: 1;
+                }
+                60% {
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -5px);
+                    opacity: 0;
+                }
             }
         }
+    }
 
-        .noteBefore {
-            margin-bottom: 8px;
-        }
+    &-info-text-QRCode {
+        margin-top: 16px;
+        width: 100%;
+        height: 190px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 7px;
 
-        .noteAfter {
-            margin-top: 8px;
+        /deep/ canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     }
 

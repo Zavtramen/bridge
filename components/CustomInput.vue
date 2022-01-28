@@ -1,5 +1,5 @@
 <template>
-    <div class="CustomInput" :class="{ hasData, disabled, error: !!error, hasCopy, isDropdownOpened }">
+    <div class="CustomInput" :class="{ hasData, disabled, error: !!error && hasData, isDropdownOpened }">
         <input
             :disabled="disabled"
             :readonly="hasDropdown"
@@ -9,10 +9,11 @@
             @input="$emit('changed')"
             @click="isDropdownOpened = true"
             @focus="isDropdownOpened = true"
+            @blur="$emit('blur')"
             @focusout="onInputFocusOut"
             v-model="model">
         <div class="CustomInput-labelWrapper">
-            <label :for="'CustomInput-' + uuid">{{ error || label }}</label>
+            <label :for="'CustomInput-' + uuid">{{ hasData && error || label }}</label>
         </div>
         <div class="CustomInput-arrow" v-if="hasDropdown"></div>
         <ul class="CustomInput-dropdown" v-if="hasDropdown">
@@ -20,7 +21,6 @@
                 <button @click="onOptionClick(item.value)">{{ item.label }}</button>
             </li>
         </ul>
-        <button class="CustomInput-copy" v-if="hasCopy" aria-label="copy" @click="onCopyClick"></button>
     </div>
 </template>
 
@@ -52,10 +52,6 @@ export default Vue.extend({
         value: {
             type: String,
             required: true
-        },
-        hasCopy: {
-            type: Boolean,
-            default: false
         },
         dropdown: {
             type: Array,
@@ -92,11 +88,6 @@ export default Vue.extend({
     },
 
     methods: {
-        onCopyClick(): void {
-            if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(this.value);
-            }
-        },
         onOptionClick(value: string): void {
             this.model = value;
             this.isDropdownOpened = false;
@@ -125,24 +116,24 @@ export default Vue.extend({
 
 @{r} {
     @color-background: #FFF;
-    @color-placeholders: #A2ACB4;
+    @color-placeholders: #757575;
     @color-primary: rgb(51,144,236);
     @color-error: #e53935;
     @color-text-secondary: rgb(112,117,121);
-    @color-borders-input: rgb(218,220,224);
-    @color-text: #000;
+    @color-borders-input: #AAA;
+    @color-text: #222222;
 
     position: relative;
-    margin-bottom: 24px;
+    margin-bottom: 30px;
     width: 100%;
     line-height: 1.5;
 
+    @media (max-width: 800px) {
+        margin-bottom: 28px;
+    }
 
-    @media (max-width: 600px) {
-        &.hasCopy {
-            width: calc(100% - 30px);
-            align-self: flex-start;
-        }
+    @media (max-width: 400px) {
+        margin-bottom: 26px;
     }
 
     &-labelWrapper {
@@ -157,13 +148,12 @@ export default Vue.extend({
 
     label {
         display: block;
-        padding: 0 4px;
+        padding: 0 8px;
         position: absolute;
         left: 12px;
-        top: 25.2px;
+        top: 22px;
         background-color: @color-background;
-        font-size: 16px;
-        font-weight: 400;
+        font-size: 17px;
         color: @color-placeholders;
         transition: transform .15s ease-out,color .15s ease-out;
         cursor: text;
@@ -171,26 +161,50 @@ export default Vue.extend({
         transform-origin: left center;
         white-space: nowrap;
         pointer-events: all;
+
+        @media (max-width: 800px) {
+            font-size: 15px;
+            left: 8px;
+            top: 21px;
+            padding: 0 6px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 14px;
+            top: 22px;
+        }
     }
 
     input {
         display: block;
         width: 100%;
-        height: 54px;
-        padding: calc(12px - 1px) calc(14.4px - 1px);
+        height: 50px;
+        padding: 9px 18px;
         border: 1px solid @color-borders-input;
-        border-radius: 12px;
+        border-radius: 8px;
         color: @color-text;
         background-color: @color-background;
         outline: none;
         transition: border-color .15s ease, 9999s background-color; // 9999s to skip browser styles for values
         word-break: break-word;
         -webkit-appearance: none;
-        font-size: 16px;
+        font-size: 17px;
         line-height: 20px;
 
          &[disabled] {
             color: @color-text-secondary;
+        }
+
+        @media (max-width: 800px) {
+            font-size: 15px;
+            padding: 7px 14px;
+            height: 46px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 14px;
+            padding: 7px 14px;
+            height: 46px;
         }
     }
 
@@ -198,7 +212,7 @@ export default Vue.extend({
         position: absolute;
         top: 50%;
         bottom: 0;
-        right: 21px;
+        right: 22px;
         height: 0;
         width: 0;
         color: @color-borders-input;
@@ -212,15 +226,23 @@ export default Vue.extend({
         transform: rotate(45deg);
         transition: .2s all;
         pointer-events: none;
+
+        @media (max-width: 800px) {
+            right: 18px;
+        }
+
+        @media (max-width: 400px) {
+            right: 16px;
+        }
     }
 
     &-dropdown {
         background: #FFF;
         border-radius: 16px;
-        box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
+        box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
         box-sizing: border-box;
         color: #303757;
-        font-size: 16px;
+        font-size: 17px;
         left: 0;
         line-height: 20px;
         list-style-type: none;
@@ -238,6 +260,15 @@ export default Vue.extend({
         opacity: 0;
         visibility: hidden;
 
+        @media (max-width: 800px) {
+            font-size: 15px;
+            padding: 10px 20px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 14px;
+        }
+
         li {
             button {
                 padding: 10px 0;
@@ -250,6 +281,14 @@ export default Vue.extend({
                 .isTouch &:active,
                 &:focus {
                     color: #1d98dc;
+                }
+
+                @media (max-width: 800px) {
+                    padding: 8px 0;
+                }
+
+                @media (max-width: 400px) {
+                    padding: 6px 0;
                 }
             }
         }
@@ -296,7 +335,15 @@ export default Vue.extend({
     &.hasData label,
     &.error label,
     &:not(.disabled) input:focus + &-labelWrapper label {
-        transform: scale(0.75) translate(-8px, -36px);
+        transform: scale(0.85) translate(3px, -31px);
+
+        @media (max-width: 800px) {
+            transform: scale(0.85) translate(3px, -27px);
+        }
+
+        @media (max-width: 400px) {
+
+        }
     }
 
     &:not(.disabled) input:focus + &-labelWrapper label {
@@ -315,28 +362,6 @@ export default Vue.extend({
 
     &:not(.disabled).error label {
         color: @color-error !important;
-    }
-
-    &-copy {
-        position: absolute;
-        right: -30px;
-        top: 50%;
-        margin-top: -12px;
-        -webkit-appearance: none;
-        height: 24px;
-        width: 24px;
-        border: none;
-        transition: 0.15s opacity;
-        background-image: url('~assets/pics/copy.svg');
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: 0 0;
-        opacity: 0.4;
-
-        .isPointer &:hover,
-        .isTouch &:active {
-            opacity: 0.75;
-        }
     }
 }
 </style>

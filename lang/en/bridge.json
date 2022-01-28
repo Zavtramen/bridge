@@ -1,6 +1,7 @@
 {
+    "logoLabel": "Bridge",
     "connectWallet": "Connect Wallet",
-    "testnet": "TESTNET",
+    "testnetMessage": "This is the testnet version. ",
     "historyPageTitle": "History",
     "providers": {
         "metamask": "Metamask",
@@ -10,21 +11,24 @@
     "networks": {
         "ton": {
             "transactionCompleted": "TON transaction completed successfully",
-            "transactionSendNote": "Click the link to open Ton wallet or copy-paste link to Send Popup in wallet",
-            "transactionSendFromPersonal": "Send from your personal wallet.",
-            "transactionSendNotFromExchanges": "Do not send directly from exchanges and bots!",
+            "transactionSend1": "Please send ",
+            "transactionSend2": "Toncoin to the address",
+            "transactionSendComment": "with the comment",
+            "openWallet": "Open Wallet",
+            "generateQRCode": "Generate QR Code",
+            "scanQRCode": "or scan QR code below",
             "errors": {
                 "invalidAddress": "Not valid TON address"
             },
             "main": {
-                "name": "TON Network",
-                "full": "TON Network",
+                "name": "The Open Network",
+                "nameSwitcher": "The Open\nNetwork",
                 "coin": "Toncoin",
                 "coinShort": "Toncoin"
             },
             "test" : {
                 "name": "TON Testnet",
-                "full": "TON Testnet",
+                "nameSwitcher": "TON\nTestnet",
                 "coin": "Toncoin",
                 "coinShort": "Toncoin"
             }
@@ -41,14 +45,14 @@
                 "lowBalance": "You need to have ETH on your wallet to pay for gas in the Ethereum network"
             },
             "main": {
-                "name": "Ethereum",
-                "full": "Ethereum Network",
+                "name": "Ethereum Network",
+                "nameSwitcher": "Ethereum\nNetwork",
                 "coin": "TONCOIN (ERC20)",
                 "coinShort": "TONCOIN"
             },
             "test" : {
                 "name": "Ethereum Ropsten",
-                "full": "Ethereum Ropsten",
+                "nameSwitcher": "Ethereum\nRopsten",
                 "coin": "TONCOIN (ERC20)",
                 "coinShort": "TONCOIN"
             }
@@ -66,30 +70,30 @@
             },
             "main": {
                 "name": "Binance Smart Chain",
-                "full": "BSC Network",
+                "nameSwitcher": "Binance\nSmart Chain",
                 "coin": "TONCOIN (BEP-20)",
                 "coinShort": "TONCOIN"
             },
             "test" : {
                 "name": "BSC Testnet",
-                "full": "BSC Testnet",
+                "nameSwitcher": "BSC\nTestnet",
                 "coin": "TONCOIN (BEP-20)",
                 "coinShort": "TONCOIN"
             }
         }
     },
-    "sendToken": "Send Token",
+    "sendToken": "Asset",
     "amountOfTon": "Amount of TON",
-    "addressInputLabel": "Address to receive in <NETWORK>",
-    "withComment": "With comment",
+    "addressInputLabel": "Destination address",
+    "willReceive": "You will receive <FEE> <COIN>",
     "bridgeFeeAbove10": "Bridge fee - <FEE> TON",
     "bridgeFeeBelow10": "Bridge fee - 5 TON + 0.25% of amount",
     "sourceCode": "Source Code",
     "howItWorks": "How it works",
     "documentation": "Documentation",
 
-    "transferHistory": "Transfer History",
-    "disconnectWallet": "Disconnect Wallet",
+    "transferHistory": "History",
+    "disconnectWallet": "Disconnect",
 
     "transfer": "Transfer",
     "getToncoin": "Get TONCOIN",
@@ -106,6 +110,8 @@
     "getCoins": "Get <TO_COIN>s in <TO_NETWORK>",
 
     "errors": {
+        "alertTitleError": "Error",
+        "alertButtonClose": "Close",
         "notValidAmount": "Amount is not valid number",
         "amountBelow10": "Amount must be at least 10 TON",
         "needPersonalAddress": "Please enter YOUR address to receive",

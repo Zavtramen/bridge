@@ -1,13 +1,15 @@
-<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="linear-gradient" x1="16" y1="32" x2="16" gradientTransform="matrix(1, 0, 0, -1, 0, 32)" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2d66f5"/>
-      <stop offset="1" stop-color="#144adf"/>
-    </linearGradient>
-    <linearGradient id="linear-gradient-2" x1="16" y1="19" x2="16" y2="13" xlink:href="#linear-gradient"/>
-  </defs>
-  <title>walletlink1</title>
-  <path d="M16,0h0A16,16,0,0,1,32,16h0A16,16,0,0,1,16,32h0A16,16,0,0,1,0,16H0A16,16,0,0,1,16,0Z" fill="url(#linear-gradient)"/>
-  <path d="M16,7h0a9,9,0,0,1,9,9h0a9,9,0,0,1-9,9h0a9,9,0,0,1-9-9H7A9,9,0,0,1,16,7Z" fill="#fff"/>
-  <rect x="13" y="13" width="6" height="6" rx="1" ry="1" fill="url(#linear-gradient-2)"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="25px" height="25px" viewBox="0 0 25 25" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>WalletLink</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#2D66F5" offset="0%"></stop>
+            <stop stop-color="#144ADF" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="WalletLink" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Path" x="0" y="0" width="25" height="25"></rect>
+        <path d="M12.5,0 L12.5,0 C19.4035594,0 25,5.59644063 25,12.5 L25,12.5 C25,19.4035594 19.4035594,25 12.5,25 L12.5,25 C5.59644063,25 0,19.4035594 0,12.5 L0,12.5 C0,5.59644063 5.59644063,0 12.5,0 Z" id="Shape" fill="url(#linearGradient-1)" fill-rule="nonzero"></path>
+        <path d="M12.5,5.46875 C16.3040021,5.46875 19.4024541,8.48956926 19.5273371,12.2631891 L19.53125,12.5 C19.53125,16.3040021 16.5104307,19.4024541 12.7368109,19.5273371 L12.5,19.53125 C8.6959979,19.53125 5.59754594,16.5104307 5.47266285,12.7368109 L5.46875,12.5 C5.46875,8.6959979 8.48956926,5.59754594 12.2631891,5.47266285 L12.5,5.46875 Z M14.0625,10.15625 L10.9375,10.15625 C10.5060275,10.15625 10.15625,10.5060275 10.15625,10.9375 L10.15625,10.9375 L10.15625,14.0625 C10.15625,14.4939725 10.5060275,14.84375 10.9375,14.84375 L10.9375,14.84375 L14.0625,14.84375 C14.4939725,14.84375 14.84375,14.4939725 14.84375,14.0625 L14.84375,14.0625 L14.84375,10.9375 C14.84375,10.5060275 14.4939725,10.15625 14.0625,10.15625 L14.0625,10.15625 Z" fill="#FFFFFF" fill-rule="nonzero"></path>
+    </g>
 </svg>

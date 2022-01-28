@@ -1,142 +1,139 @@
 <template>
     <div class="Bridge">
-        <div class="Bridge-img" :class="{isFromTon}" v-show="!showQRCode"></div>
-        <div class="Bridge-qrcode" ref="qrcode" v-show="showQRCode"></div>
-        <div class="Bridge-form">
-            <div class="Bridge-switchers" :class="{isFromTon}" :key="isFromTon">
-                <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
-                    <div class="Bridge-switcherTitle">
-                        <span>{{tonNetworkName}}&nbsp;▾</span>
-                        <ul class="Bridge-switcherList">
-                            <li
-                                v-for="item in fromPairs"
-                                :key="item"
-                                @click="onPairClick(true, item)"><button>{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
-                        </ul>
+        <Header
+            :is-testnet="isTestnet"
+            :show-menu="isConnected && walletsPopupState === 'closed'"
+            :provider="provider"
+            :disable-disconnect="isTransferInProgress"></Header>
+
+        <main class="Bridge-content">
+            <div class="Bridge-img" :class="{isFromTon}">
+                <div class="Bridge-imgAspect"></div>
+            </div>
+            <div class="Bridge-form">
+                <div class="Bridge-switchers" :class="{isFromTon}" :key="isFromTon">
+                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                        <div class="Bridge-switcherTitle">
+                            <span>{{$t(`Bridge.networks.ton.${netTypeName}.nameSwitcher`)}}<em></em></span>
+                            <ul class="Bridge-switcherList" :class="{ left: isFromTon, right: !isFromTon}">
+                                <li
+                                    v-for="(item, index) in fromPairs"
+                                    :key="item"><button :disabled="index === 0" @click="onPairClick(true, item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
+                            </ul>
+                        </div>
+                        <div class="Bridge-switcherAnno">{{$t(`Bridge.networks.ton.${netTypeName}.coin`)}}</div>
                     </div>
-                    <div class="Bridge-switcherAnno">{{tonNetworkCoin}}</div>
+
+                    <button
+                        class="Bridge-switcher-arrow"
+                        :disabled="isPairsBlocked"
+                        @click="toggleFromTon"></button>
+
+                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                        <div class="Bridge-switcherTitle">
+                            <span>{{$t(`Bridge.networks.${pair}.${netTypeName}.nameSwitcher`)}}<em></em></span>
+                            <ul class="Bridge-switcherList" :class="{ left: !isFromTon, right: isFromTon}">
+                                <li
+                                    v-for="(item, index) in toPairs"
+                                    :key="item"><button :disabled="index === 0" @click="onPairClick(item === 'ton', item === 'ton' ? pair : item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
+                            </ul>
+                        </div>
+                        <div class="Bridge-switcherAnno"><a :href="pairNetworkCoinUrl" target="_blank">{{$t(`Bridge.networks.${pair}.${netTypeName}.coin`)}}</a></div>
+                    </div>
                 </div>
 
-                <button
-                    class="Bridge-switcher-arrow"
-                    :disabled="isPairsBlocked"
-                    @click="toggleFromTon"></button>
+                <CustomInput
+                    key="token"
+                    :disabled="true"
+                    :label="$t('Bridge.sendToken')"
+                    type="text"
+                    :dropdown="[{ label: 'Toncoin', value: 'ton' }, { label: 'Litecoin', value: 'lth' }, { label: 'Bitcoin', value: 'bth' }]"
+                    v-model="token"
+                ></CustomInput>
 
-                <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
-                    <div class="Bridge-switcherTitle">
-                        <span>{{pairNetworkName}}&nbsp;▾</span>
-                        <ul class="Bridge-switcherList">
-                            <li
-                                v-for="item in toPairs"
-                                :key="item"
-                                @click="onPairClick(item === 'ton', item === 'ton' ? pair : item)"><button>{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
-                        </ul>
-                    </div>
-                    <div class="Bridge-switcherAnno"><a :href="pairNetworkCoinUrl" target="_blank">{{pairNetworkCoin}}</a></div>
+                <CustomInput
+                    key="amountInner"
+                    :disabled="isInputsBlocked"
+                    :label="$t('Bridge.amountOfTon')"
+                    type="number"
+                    :error="errors.amount"
+                    @changed="errors.amount = ''"
+                    @blur="checkInputs"
+                    v-model="amountInner"
+                ></CustomInput>
+
+                <CustomInput
+                    key="toAddress"
+                    :disabled="isInputsBlocked"
+                    :label="$t(`Bridge.addressInputLabel`)"
+                    type="text"
+                    :error="errors.toAddress"
+                    @changed="errors.toAddress = ''"
+                    @blur="checkInputs"
+                    v-model="toAddress"
+                ></CustomInput>
+
+                <div class="Bridge-willReceive" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading) && willReceive" :class="{isFromTon}">{{willReceive}}</div>
+
+                <div class="Bridge-bridgeWrapper">
+                    <button
+                         v-if="!isConnected"
+                        class="Bridge-connect"
+                        @click="walletsPopupState = 'opened'">{{$t('Bridge.connectWallet')}}</button>
+
+                    <div class="Bridge-bridgeLoader" v-if="isConnected && bridgeProcessorIsLoading"></div>
+
+                    <BridgeProcessor
+                        v-if="isConnected"
+                        ref="bridgeProcessor"
+                        :key="pair"
+                        :is-testnet="isTestnet"
+                        :is-recover="isRecover"
+                        :lt="lt"
+                        :hash="hash"
+                        :is-from-ton="isFromTon"
+                        :pair="pair"
+                        :amount="amount"
+                        :to-address="toAddress"
+                        :provider="provider"
+                        :is-inputs-valid="isInputsValid"
+                        @transfer-in-progress="onTransferInProgress"
+                        @state-changed="getPairGasFee__debounced"
+                        @reset-state="resetState"
+                        @save-state="saveState"
+                        @delete-state="deleteState"
+                        @ready="onBridgeProcessorReady"
+                        @error="onBridgeTransferError"
+                    ></BridgeProcessor>
                 </div>
+
+                <div class="Bridge-pairFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{pairFee}}</div>
+                <div class="Bridge-bridgeFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{bridgeFee}}</div>
+
+                <WalletsPopup
+                    v-if="walletsPopupState !== 'closed'"
+                    :params="params"
+                    :uncancellable="walletsPopupState === 'opened-uncancellable'"
+                    @wallet-connected="onWalletConnected"
+                    @cancel="walletsPopupState = 'closed'"
+                ></WalletsPopup>
             </div>
+        </main>
 
-            <CustomInput
-                key="token"
-                :disabled="true"
-                :label="$t('Bridge.sendToken')"
-                type="text"
-                :dropdown="[{ label: 'Toncoin', value: 'ton' }, { label: 'Litecoin', value: 'lth' }, { label: 'Bitcoin', value: 'bth' }]"
-                v-model="token"
-            ></CustomInput>
-
-            <CustomInput
-                key="amountInner"
-                :disabled="isInputsBlocked"
-                :label="$t('Bridge.amountOfTon')"
-                :has-copy="isFromTon && isTransferInProgress"
-                type="number"
-                :error="errorInput === 'amount' ? errorMessage : ''"
-                @changed="errorInput = ''"
-                v-model="amountInner"
-            ></CustomInput>
-
-            <CustomInput
-                key="toAddress"
-                :disabled="isInputsBlocked"
-                :label="addressInputLabel"
-                :has-copy="isFromTon && isTransferInProgress"
-                type="text"
-                :error="errorInput === 'toAddress' ? errorMessage : ''"
-                @changed="errorInput = ''"
-                v-model="toAddress"
-            ></CustomInput>
-
-            <CustomInput
-                key="comment"
-                v-if="isFromTon && isTransferInProgress"
-                :disabled="true"
-                :label="$t('Bridge.withComment')"
-                :has-copy="isFromTon && isTransferInProgress"
-                type="text"
-                v-model="comment"
-            ></CustomInput>
-
-            <div class="Bridge-pairFee">{{pairFee}}</div>
-            <div class="Bridge-bridgeFee">{{bridgeFee}}</div>
-
-            <div class="Bridge-bridgeWrapper">
-                <button
-                     v-if="!isConnected"
-                    class="Bridge-connect"
-                    @click="walletsPopupState = 'opened'">{{$t('Bridge.connectWallet')}}</button>
-
-                <div class="Bridge-bridgeLoader" v-if="isConnected && bridgeProcessorIsLoading"></div>
-
-                <BridgeProcessor
-                    v-if="isConnected"
-                    ref="bridgeProcessor"
-                    :key="pair"
-                    :is-testnet="isTestnet"
-                    :is-recover="isRecover"
-                    :lt="lt"
-                    :hash="hash"
-                    :is-from-ton="isFromTon"
-                    :pair="pair"
-                    :amount="amount"
-                    :to-address="toAddress"
-                    :provider="provider"
-                    @transfer-in-progress="onTransferInProgress"
-                    @state-changed="getPairGasFee__debounced"
-                    @reset-state="resetState"
-                    @save-state="saveState"
-                    @delete-state="deleteState"
-                    @ready="onBridgeProcessorReady"
-                    @error="onBridgeTransferError"
-                ></BridgeProcessor>
-            </div>
-
-            <WalletsPopup
-                v-if="walletsPopupState !== 'closed'"
-                :params="params"
-                :uncancellable="walletsPopupState === 'opened-uncancellable'"
-                @wallet-connected="onWalletConnected"
-                @cancel="walletsPopupState = 'closed'"
-            ></WalletsPopup>
-
-            <ConnectedMenu
-                v-if="isConnected && walletsPopupState === 'closed'"
-                :provider="provider"
-                :is-testnet="isTestnet"
-                :disable-disconnect="isTransferInProgress"
-            ></ConnectedMenu>
-        </div>
+        <Footer></Footer>
     </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
 import TonWeb from 'tonweb';
-import QRCode from 'easyqrcodejs'
+import Web3 from 'web3';
 import lodashDebounce from 'lodash.debounce';
 import { supportsLocalStorage } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 import CustomInput from '~/components/CustomInput.vue';
+import Header from '~/components/Header.vue';
+import Footer from '~/components/Footer.vue';
 import { Provider } from '~/utils/providers/provider';
 
 const PAIRS = ['eth', 'bsc'];
@@ -161,9 +158,10 @@ type ComponentData = {
     isConnected: boolean,
     walletsPopupState: string,
     bridgeProcessorIsLoading: boolean,
-    errorInput: string,
-    errorMessage: string,
-    showQRCode: boolean
+    errors: {
+        amount: string,
+        toAddress: string
+    }
 }
 
 export default Vue.extend({
@@ -172,8 +170,9 @@ export default Vue.extend({
     components: {
         'BridgeProcessor': () => import('~/components/BridgeProcessor.vue'),
         'WalletsPopup': () => import('~/components/WalletsPopup.vue'),
-        'ConnectedMenu': () => import('~/components/ConnectedMenu.vue'),
-        CustomInput
+        CustomInput,
+        Header,
+        Footer
     },
 
     head(): object {
@@ -203,13 +202,17 @@ export default Vue.extend({
             isConnected: false,
             walletsPopupState: 'closed',
             bridgeProcessorIsLoading: false,
-            errorInput: '',
-            errorMessage: '',
-            showQRCode: false
+            errors: {
+                amount: '',
+                toAddress: ''
+            }
         }
     },
 
     computed: {
+        isInputsValid(): boolean {
+            return !this.errors.amount && !this.errors.toAddress;
+        },
         netTypeName(): string {
             return this.isTestnet ? 'test' : 'main';
         },
@@ -217,28 +220,20 @@ export default Vue.extend({
             const pairParams = PARAMS.networks[this.pair];
             return pairParams[this.netTypeName as keyof typeof pairParams];
         },
-        tonNetworkName(): string {
-            return this.$t(`Bridge.networks.ton.${this.netTypeName}.name`) as string;
-        },
-        tonNetworkCoin(): string {
-            return this.$t(`Bridge.networks.ton.${this.netTypeName}.coin`) as string;
-        },
-        pairNetworkName(): string {
-            return this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.name`) as string;
-        },
-        pairNetworkCoin(): string {
-            return this.$t(`Bridge.networks.${this.pair}.${this.netTypeName}.coin`) as string;
-        },
         pairNetworkCoinUrl(): string {
             const url = this.params.explorerUrl as string;
             const address = this.params.wTonAddress as string;
             return url.replace('<ADDRESS>', address) as string;
         },
-        addressInputLabel(): string {
-            const pair = this.isFromTon ? this.pair : 'ton';
-            const networkFillName = this.$t(`Bridge.networks.${pair}.${this.netTypeName}.full`) as string;
-            const label = this.$t(`Bridge.addressInputLabel`) as string;
-            return label.replace('<NETWORK>', networkFillName) as string;
+        willReceive(): string {
+            if (this.bridgeFeeAmount) {
+                const coin = this.$t(`Bridge.networks.${this.isFromTon ? this.pair : 'ton'}.${this.netTypeName}.coin`);
+                return (this.$t('Bridge.willReceive') as string)
+                    .replace('<FEE>', String(this.amount - this.bridgeFeeAmount))
+                    .replace('<COIN>', coin);
+            } else {
+                return '';
+            }
         },
         pairFee(): string {
             const n = this.gasPrice ? this.gasPrice / this.params.defaultGwei : 1;
@@ -256,21 +251,28 @@ export default Vue.extend({
                 this.amountInner = isNaN(value) ? '' : String(value);
             }
         },
-        bridgeFee(): string {
+        bridgeFeeAmount(): number {
             if (!isNaN(this.amount) && this.amount >= 10) {
-                return (this.$t('Bridge.bridgeFeeAbove10') as string).replace('<FEE>', String(5 + (this.amount - 5) * (0.25 / 100)));
+                return 5 + (this.amount - 5) * (0.25 / 100)
+            } else {
+                return 0
+            }
+        },
+        bridgeFee(): string {
+            if (this.bridgeFeeAmount) {
+                return (this.$t('Bridge.bridgeFeeAbove10') as string).replace('<FEE>', String(this.bridgeFeeAmount));
             } else {
                 return this.$t('Bridge.bridgeFeeBelow10') as string;
             }
         },
         fromPairs(): string[] {
-            return PAIRS;
+            return [
+                'ton',
+                ...PAIRS
+            ];
         },
         toPairs(): string[] {
-            return ['ton', ...PAIRS.filter(i => i !== this.pair)];
-        },
-        comment(): string {
-            return this.toAddress ? 'swapTo#' + this.toAddress : '';
+            return [this.pair, ...PAIRS.filter(i => i !== this.pair), 'ton'];
         },
         isPairsBlocked(): boolean {
             return this.isTransferInProgress/* || this.isConnected*/;
@@ -281,15 +283,18 @@ export default Vue.extend({
     },
 
     watch: {
-        isFromTon(): void {
+        isFromTon(newVal: boolean, oldVal: boolean): void {
             this.getPairGasFee__debounced();
+
+            if (newVal !== oldVal) {
+                this.checkInputs();
+            }
         },
         async pair(newVal: string, oldVal: string): Promise<void> {
             this.getPairGasFee__debounced();
 
             if (newVal !== oldVal) {
-                this.errorInput = '';
-                this.errorMessage = '';
+                this.checkInputs();
             }
 
             if (newVal !== oldVal && this.isConnected && this.provider) {
@@ -345,9 +350,36 @@ export default Vue.extend({
     mounted(): void {
         this.getPairGasFee__debounced();
         this.loadStateBridge();
+        this.checkInputs();
     },
 
     methods: {
+        checkInputs(): void {
+            this.errors.amount = '';
+            this.errors.toAddress = '';
+
+            if (isNaN(this.amount)) {
+                this.errors.amount = this.$t('Bridge.errors.notValidAmount') as string;
+            }
+            if (this.amount < 10) {
+                this.errors.amount = this.$t('Bridge.errors.amountBelow10') as string;
+            }
+
+            if (this.toAddress.toLowerCase() === this.params.wTonAddress.toLowerCase() ||
+                this.toAddress.toLowerCase() === this.params.tonBridgeAddress.toLowerCase()) {
+                this.errors.toAddress = this.$t('Bridge.errors.amountBelow10') as string;
+            }
+
+            if (this.isFromTon) {
+                if (!Web3.utils.isAddress(this.toAddress)) {
+                    this.errors.toAddress = this.$t(`Bridge.networks.${this.pair}.errors.invalidAddress`) as string;
+                }
+            } else {
+                if (!TonWeb.utils.Address.isValid(this.toAddress)) {
+                    this.errors.toAddress = this.$t(`Bridge.networks.ton.errors.invalidAddress`) as string;
+                }
+            }
+        },
         onPairClick(switchDirection: boolean, toPair: string): void {
             if (this.isPairsBlocked) {
                 return
@@ -427,33 +459,8 @@ export default Vue.extend({
             localStorage.removeItem('bridgeState');
         },
         onTransferInProgress(isActive: boolean): void {
-            if (isActive && !this.isTransferInProgress && this.isFromTon) {
-                this.showQRCode = true;
-
-                const url = PARAMS.tonTransferUrl
-                    .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
-                    .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
-                    .replace('<TO_ADDRESS>', this.toAddress);
-
-                console.log(url);
-
-                const options = {
-                    text: url,
-                    width: 600,
-                    height: 600,
-                    logo: require("assets/pics/gem@large.png"),
-                    logoWidth: 142,
-                    logoHeight: 142,
-                    correctLevel: QRCode.CorrectLevel.L
-                };
-                new QRCode(this.$refs.qrcode, options);
-            }
-            if (!isActive) {
-                this.showQRCode = false;
-            }
             this.isTransferInProgress = isActive;
-            this.errorInput = '';
-            this.errorMessage = '';
+            this.checkInputs();
         },
         toggleFromTon(): void {
             if (this.isPairsBlocked) {
@@ -514,8 +521,12 @@ export default Vue.extend({
             this.bridgeProcessorIsLoading = false;
         },
         onBridgeTransferError(params: {input: string, message: string}): void {
-            this.errorInput = params.input;
-            this.errorMessage = params.message;
+            if (params.input === 'amount') {
+                this.errors.amount = params.message;
+            }
+            if (params.input === 'toAddress') {
+                this.errors.toAddress = params.message;
+            }
         }
     }
 })
@@ -526,47 +537,51 @@ export default Vue.extend({
 @r: .Bridge;
 
 @{r} {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    position: relative;
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 100%;
 
-    &-img {
-        background-image: url('~assets/pics/swap.svg');
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-        max-width: 450px;
-        width: 100%;
-        height: 450px;
-        transition: transform 0.15s ease-out;
-        transform: scale(-1, 1);
+    &-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 117px 40px 50px;
 
         @media (max-width: 800px) {
-            height: 300px;
+            padding: 100px 16px 50px;
+        }
+    }
+
+    &-img {
+        max-width: 464px;
+        width: 100%;
+        transition: transform 0.15s ease-out;
+        transform: scale(-1, 1);
+        margin-bottom: 58px;
+
+        @media (max-width: 800px) {
+            margin-bottom: 44px;
+        }
+
+        @media (max-width: 400px) {
+            margin-bottom: 32px;
         }
 
         &.isFromTon {
             transform: none;
         }
-    }
 
-    &-qrcode {
-        max-width: 450px;
-        width: 100%;
-        height: 450px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 36px;
-
-        @media (max-width: 800px) {
-            height: 300px;
-        }
-
-        /deep/ canvas {
+        &Aspect {
+            height: 0;
             width: 100%;
-            height: 100%;
-            object-fit: contain;
+            padding-top: 70.17%;
+            background-image: url('~assets/pics/swap.svg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
         }
     }
 
@@ -585,11 +600,18 @@ export default Vue.extend({
         display: flex;
         flex-direction: row-reverse;
         align-items: center;
-        margin-bottom: 40px;
-        z-index: 1;
+        margin-bottom: 55px;
 
         &.isFromTon {
             flex-direction: row;
+        }
+
+        @media (max-width: 800px) {
+            margin-bottom: 44px;
+        }
+
+        @media (max-width: 400px) {
+            margin-bottom: 32px;
         }
     }
 
@@ -598,47 +620,70 @@ export default Vue.extend({
         flex: 1 0;
 
         &.disabled {
-            color: gray;
-
             @{r}-switcherTitle {
                 pointer-events: none;
-            }
-
-            a {
-                color: gray;
             }
         }
 
         &Title {
             position: relative;
-            font-size: 36px;
+            font-size: 25px;
             font-weight: bold;
+            letter-spacing: -0.1px;
             cursor: pointer;
             white-space: nowrap;
+            transition: 0.15s color;
 
             @media (max-width: 800px) {
-                font-size: 22px;
+                font-size: 20px;
             }
 
+            @media (max-width: 400px) {
+                font-size: 16px;
+            }
 
             span {
-                white-space: normal;
+                white-space: pre;
             }
 
             em {
                 display: inline-block;
-                vertical-align: 5px;
-                width: 0;
-                height: 0;
-                border-style: solid;
-                border-width: 10px 5px 0 5px;
-                border-color: #000 transparent transparent transparent;
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                background-image: url('~assets/pics/dropdown.svg'), url('~assets/pics/dropdown-active.svg');
+                background-size: contain, 0 0;
+                background-repeat: no-repeat;
+                background-position: center;
+                transition: 0.15s transform;
+                margin-left: 8px;
+                margin-top: 9px;
+
+                @media (max-width: 800px) {
+                    margin-left: 6px;
+                    margin-top: 7px;
+                    width: 16px;
+                    height: 16px;
+                }
+
+                @media (max-width: 400px) {
+                    margin-left: 4px;
+                    margin-top: 6px;
+                    width: 12px;
+                    height: 12px;
+                }
             }
         }
 
+        &Title:hover {
+            color: #1D98DC;
 
-        // .isPointer &Title:hover &List,
-        // .isTouch &Title:active &List {
+            em {
+                transform: rotate(180deg);
+                background-image: url('~assets/pics/dropdown-active.svg');
+            }
+        }
+
         &Title:hover &List {
             transition: opacity 0.15s ease-in-out;
             opacity: 1;
@@ -646,28 +691,31 @@ export default Vue.extend({
         }
 
         &Anno {
-            margin-top: 4px;
+            margin-top: 6px;
             height: 20px;
+            font-size: 15px;
+            color: #757575;
 
             a {
                 display: inline-block;
-                color: #000;
-                border-bottom: 1px dotted #AAA;
+                text-decoration: underline;
+                color: #757575;
 
                 .isPointer &:hover,
                 .isTouch &:active {
-                    border-bottom: 1px dotted transparent;
+                    text-decoration: none;
                 }
 
                 &:after {
                     content: '';
+                    position: absolute;
                     display: inline-block;
-                    height: 16px;
-                    width: 16px;
+                    height: 20px;
+                    width: 20px;
                     background-image: url('~assets/pics/link.svg');
                     background-repeat: no-repeat;
                     background-size: contain;
-                    background-position: 0 3px;
+                    vertical-align: -3px;
 
                     @media (max-width: 800px) {
                         display: none
@@ -683,44 +731,99 @@ export default Vue.extend({
         &List {
             background: #FFF;
             border-radius: 16px;
-            box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
+            box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
             box-sizing: border-box;
-            color: #303757;
-            font-size: 16px;
-            left: -16px;
-            line-height: 20px;
             list-style-type: none;
             margin: 0;
-            padding: 12px 24px;
+            padding: 10px 56px 10px 25px;
             position: absolute;
-            right: -16px;
-            top: 100%;
+            top: calc(100% + 36px);
+            width: 250px;
             word-break: break-word;
             white-space: normal;
+            z-index: 1;
+            cursor: default;
+            text-align: left;
 
             transition: all 0 ease-in-out;
             opacity: 0;
             visibility: hidden;
 
+            &.left {
+                left: 0;
+            }
+
+            &.right {
+                right: 0;
+            }
+
+            @media (max-width: 800px) {
+                padding: 6px 32px 6px 16px;
+                top: calc(100% + 32px);
+                width: 200px;
+            }
+
+            @media (max-width: 400px) {
+                top: calc(100% + 28px);
+            }
+
             &:before {
                 content: '';
                 position: absolute;
-                top: -20px;
+                top: -36px;
                 width: 100%;
                 left: 0;
-                height: 20px;
+                height: 36px;
+
+                @media (max-width: 800px) {
+                    top: -32px;
+                    height: 32px;
+                }
             }
 
+
             li {
+                position: relative;
+
+                &:first-child {
+                    pointer-events: none;
+
+                    &:after {
+                        content: '';
+                        position: absolute;
+                        display: inline-block;
+                        right: -31px;
+                        top: 14px;
+                        width: 16px;
+                        height: 17px;
+                        background-image: url('~assets/pics/check.svg');
+                        background-repeat: no-repeat;
+                        background-size: contain;
+
+                        @media (max-width: 800px) {
+                            right: -20px;
+                            top: 11px;
+                        }
+                    }
+                }
+
                 button {
-                    padding: 10px 0;
+                    padding: 12px 0 11px;
                     color: #303757;
+                    font-size: 16px;
+                    line-height: 22px;
                     font-weight: 700;
                     cursor: pointer;
 
                     .isPointer &:hover,
                     .isTouch &:active {
                         color: #1d98dc;
+                    }
+
+                    @media (max-width: 800px) {
+                        padding: 10px 0 9px;
+                        font-size: 14px;
+                        line-height: 20px;
                     }
                 }
             }
@@ -729,28 +832,55 @@ export default Vue.extend({
 
     &-switcher-arrow {
         cursor: pointer;
-        background-image: url('~assets/pics/arrow.svg');
-        background-size: contain;
+        background-image: url('~assets/pics/arrow.svg'), url('~assets/pics/arrow-disabled.svg');
+        background-size: contain, 0 0;
         background-repeat: no-repeat;
         background-position: center;
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         margin-left: 16px;
         margin-right: 16px;
+        margin-bottom: 3px;
 
         &[disabled] {
             cursor: default;
+            background-image: url('~assets/pics/arrow-disabled.svg');
+        }
+
+        @media (max-width: 400px) {
+            width: 24px;
+            height: 24px;
+            margin-left: 8px;
+            margin-right: 8px;
+            margin-bottom: 3px;
         }
     }
 
-    &-pairFee {
-        color: #666666;
-        margin-bottom: 4px;
-    }
+    &-willReceive {
+        margin-top: -10px;
+        font-size: 15px;
+        color: #858585;
 
-    &-bridgeFee {
-        color: #666666;
-        margin-bottom: 10px;
+        @media (max-width: 800px) {
+            font-size: 14px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 13px;
+        }
+
+        &:not(.isFromTon):after {
+            content: '';
+            display: inline-block;
+            background-image: url('~assets/pics/crystal.svg');
+            background-size: contain, 0 0;
+            background-repeat: no-repeat;
+            background-position: center;
+            width: 20px;
+            height: 20px;
+            vertical-align: -4px;
+            margin-left: 4px;
+        }
     }
 
     &-bridgeWrapper {
@@ -762,23 +892,33 @@ export default Vue.extend({
         -webkit-appearance: none;
         background-color: #1d98dc;
         border-radius: 25px;
+        font-weight: 700;
         color: white;
-        font-size: 16px;
+        font-size: 15px;
         line-height: 19px;
         border: none;
-        padding: 15px 35px 14px;
+        padding: 16px 35px 15px;
 
         .isPointer &:hover,
         .isTouch &:active {
             background-color: #5fb8ea;
         }
+
+        @media (max-width: 800px) {
+            font-size: 14px;
+            padding: 14px 32px 13px;
+        }
     }
 
     &-bridgeLoader {
-        height: 48px;
+        height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
+
+        @media (max-width: 800px) {
+            height: 46px;
+        }
 
         &:after {
             content: '';
@@ -797,5 +937,30 @@ export default Vue.extend({
             }
         }
     }
+
+    &-pairFee,
+    &-bridgeFee  {
+        color: #AAAAAA;
+        font-size: 14px;
+        line-height: 20 / 14;
+        letter-spacing: -0.1px;
+
+        @media (max-width: 800px) {
+            font-size: 13px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 12px;
+        }
+    }
+
+    &-pairFee {
+        margin-top: 20px;
+    }
+
+    &-bridgeFee {
+        margin-bottom: 20px;
+    }
+
 }
 </style>
