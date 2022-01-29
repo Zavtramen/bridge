@@ -78,11 +78,12 @@ import Vue from 'vue'
 import Web3 from 'web3';
 import TonWeb from 'tonweb';
 import QRCode from 'easyqrcodejs';
+import Hash from "eth-lib/lib/hash";
 import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
 import { Contract } from 'web3-eth-contract';
 import { AbiItem } from 'web3-utils';
-import { getNumber, getBool, decToHex, parseAddressFromDec, getLegacyQueryString } from '~/utils/helpers';
+import { getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
 import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
@@ -363,10 +364,12 @@ export default Vue.extend({
 
     methods: {
         onCopyClick(e: MouseEvent): void {
-            const target = e.target;
+            const target = <HTMLButtonElement>e.target;
 
-            let timeout1, timeout2;
-            const triggerClass = (className) => {
+            let timeout1: ReturnType<typeof setTimeout>;
+            let timeout2: ReturnType<typeof setTimeout>;
+
+            const triggerClass = (className: string) => {
                 target.classList.remove(className);
                 clearTimeout(timeout1);
                 clearTimeout(timeout2);
@@ -519,7 +522,17 @@ export default Vue.extend({
             const timeout = ethToTon.blockTime + MULTISIG_QUERY_TIMEOUT + VERSION;
             const queryStr = ethToTon.blockHash + '_' + ethToTon.transactionHash + '_' + String(ethToTon.logIndex);
 
-            const query_id = Web3.utils.sha3(getLegacyQueryString(queryStr))!.substr(2, 8); // get first 32 bit
+            // web3@1.3.4 has an error in the algo for computing SHA
+            // it doesn't strictly check input string for valid HEX relying only for 0x prefix
+            // but the query string is formed that way: 0xBLOCKHASH + '_' + 0xTRANSACTIONHASH + '_' + LOGINDEX
+            // the keccak algo splits string to pairs of symbols, and treats them as hex bytes
+            // so _0 becames NaN, x7 becames NaN, d_ becames 13 (it only sees first d and skips invalid _)
+            // web3@1.6.1 has this error fixed, but for our case this means that we've got different hashes for different web3 versions
+            // thats why we are using fixed version of eth-lib@0.1.29, and it's Hash.keccak256 (instead of Web3.utils.sha3)
+            // it calcs the same results as web3@1.3.4 so we can update web3 to 1.6.1 without breaking compatibility with hashes computed in the old way
+            // btw, it's definitially a very bad idea for hash function to treat input as something other than string,
+            // have no idea why they are trying to work with 0x strings in a special way, like they are HEX numbers
+            const query_id = Hash.keccak256(queryStr)!.substr(2, 8); // get first 32 bit
 
             return new BN(timeout).mul(new BN(4294967296)).add(new BN(query_id, 16));
         },

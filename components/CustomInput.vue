@@ -71,9 +71,13 @@ export default Vue.extend({
         },
         model: {
             get(): string {
+                type Item = {
+                    label: string,
+                    value: string
+                };
                 if (this.hasDropdown) {
-                    const item = this.dropdown.find(item => item.value === this.value);
-                    return item?.label;
+                    const item: Item | undefined = (this.dropdown as Array<Item>).find((item: Item) => item.value === this.value);
+                    return item?.label || '';
                 } else {
                     return this.value;
                 }
@@ -98,7 +102,7 @@ export default Vue.extend({
             }
 
             let elem = e.relatedTarget;
-            for ( ; elem && elem !== document; elem = elem.parentNode ) {
+            for ( ; elem && elem !== document; elem = (<HTMLElement>elem).parentNode ) {
                 if ( elem === this.$el ) return;
             }
 

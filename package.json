@@ -19,6 +19,7 @@
     "core-js": "3.15.1",
     "detect-it": "4.0.1",
     "easyqrcodejs": "4.4.10",
+    "eth-lib": "0.1.29",
     "ethers": "5.5.2",
     "less": "4.1.1",
     "less-loader": "7.3.0",
