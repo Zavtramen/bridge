@@ -52,14 +52,14 @@
                 ></CustomInput>
 
                 <CustomInput
-                    key="amountInner"
+                    key="amountInput"
                     :disabled="isInputsBlocked"
                     :label="$t('Bridge.amountOfTon')"
                     type="number"
                     :error="errors.amount"
                     @changed="errors.amount = ''"
                     @blur="checkInputs"
-                    v-model="amountInner"
+                    v-model="amountInput"
                 ></CustomInput>
 
                 <CustomInput
@@ -137,6 +137,9 @@ import Footer from '~/components/Footer.vue';
 import { Provider } from '~/utils/providers/provider';
 
 const PAIRS = ['eth', 'bsc'];
+const BN = TonWeb.utils.BN;
+const fromNano = TonWeb.utils.fromNano;
+const toNano = TonWeb.utils.toNano;
 
 type ComponentData = {
     getPairGasFee__debounced: () => void,
@@ -150,7 +153,7 @@ type ComponentData = {
     isFromTon: boolean,
     pair: string,
     token: string,
-    amountInner: string,
+    amountInput: string,
     toAddress: string,
     provider: Provider | null,
 
@@ -194,7 +197,7 @@ export default Vue.extend({
             isFromTon: true,
             pair: 'eth',
             token: 'ton',
-            amountInner: '',
+            amountInput: '',
             toAddress: '',
             provider: null,
 
@@ -226,13 +229,13 @@ export default Vue.extend({
             return url.replace('<ADDRESS>', address) as string;
         },
         willReceive(): string {
-            if (this.bridgeFeeAmount) {
+            if (this.bridgeFeeAmount.isZero()) {
+                return '';
+            } else {
                 const coin = this.$t(`Bridge.networks.${this.isFromTon ? this.pair : 'ton'}.${this.netTypeName}.coin`);
                 return (this.$t('Bridge.willReceive') as string)
-                    .replace('<FEE>', String(this.amount - this.bridgeFeeAmount))
+                    .replace('<FEE>', fromNano(this.amount.sub(this.bridgeFeeAmount)))
                     .replace('<COIN>', coin);
-            } else {
-                return '';
             }
         },
         pairFee(): string {
@@ -241,28 +244,30 @@ export default Vue.extend({
 
             return (this.$t(`Bridge.networks.${this.pair}.gasFee`) as string).replace('<FEE>', fee.toFixed(4));
         },
-        amount: {
-            get(): number {
-                const amount = parseFloat(this.amountInner);
-                return !amount || isNaN(amount) ? 0 : amount;
-            },
-
-            set(value: number): void {
-                this.amountInner = isNaN(value) ? '' : String(value);
+        amount(): typeof BN {
+            try {
+                return toNano(this.amountInput);
+            } catch (e) {
+                return new BN(0);
             }
         },
-        bridgeFeeAmount(): number {
-            if (!isNaN(this.amount) && this.amount >= 10) {
-                return 5 + (this.amount - 5) * (0.25 / 100)
+        bridgeFeeAmount(): typeof BN {
+            if (this.amount.lt(toNano(10))) {
+                return new BN(0)
             } else {
-                return 0
+                const fixedFeeNano = toNano(5);
+                const floatFeeNano = this.amount.sub(fixedFeeNano);
+                //10000 is multiplier to get integer value for 0.2500%
+                //100 is divider to convert percentages to fraction
+                return floatFeeNano.muln(0.2500 * 10000).divn(10000 * 100).add(fixedFeeNano); //5 + (this.amount - 5) * (0.25 / 100)
+
             }
         },
         bridgeFee(): string {
-            if (this.bridgeFeeAmount) {
-                return (this.$t('Bridge.bridgeFeeAbove10') as string).replace('<FEE>', String(this.bridgeFeeAmount));
-            } else {
+            if (this.bridgeFeeAmount.isZero()) {
                 return this.$t('Bridge.bridgeFeeBelow10') as string;
+            } else {
+                return (this.$t('Bridge.bridgeFeeAbove10') as string).replace('<FEE>', fromNano(this.bridgeFeeAmount));
             }
         },
         fromPairs(): string[] {
@@ -325,8 +330,11 @@ export default Vue.extend({
             this.hash = this.$route.query.hash as string;
         }
         if (this.$route.query.amount) {
-            const amount = parseFloat(TonWeb.utils.fromNano(this.$route.query.amount));
-            this.amount = !amount || isNaN(amount) ? 0 : amount;
+            try {
+                this.amountInput = fromNano(this.$route.query.amount);
+            } catch(e) {
+                this.amountInput = ''; // for empty string inside input
+            }
         }
         if (this.$route.query.toAddress) {
             this.toAddress = this.$route.query.toAddress as string;
@@ -358,16 +366,19 @@ export default Vue.extend({
             this.errors.amount = '';
             this.errors.toAddress = '';
 
-            if (isNaN(this.amount)) {
-                this.errors.amount = this.$t('Bridge.errors.notValidAmount') as string;
-            }
-            if (this.amount < 10) {
+            if (this.amount.lt(toNano(10))) {
                 this.errors.amount = this.$t('Bridge.errors.amountBelow10') as string;
+            }
+
+            try {
+                toNano(this.amountInput);
+            } catch (e) {
+                this.errors.amount = this.$t('Bridge.errors.notValidAmount') as string;
             }
 
             if (this.toAddress.toLowerCase() === this.params.wTonAddress.toLowerCase() ||
                 this.toAddress.toLowerCase() === this.params.tonBridgeAddress.toLowerCase()) {
-                this.errors.toAddress = this.$t('Bridge.errors.amountBelow10') as string;
+                this.errors.toAddress = this.$t('Bridge.errors.needPersonalAddress') as string;
             }
 
             if (this.isFromTon) {
@@ -394,7 +405,7 @@ export default Vue.extend({
             this.isRecover = false;
             this.lt = 0;
             this.hash = '';
-            this.amountInner = '';
+            this.amountInput = ''; //to reset inside input directly
             this.toAddress = '';
         },
         loadStateBridge(): void {
@@ -412,7 +423,7 @@ export default Vue.extend({
                     return;
                 }
 
-                this.amount = state.amount;
+                this.amountInput = state.amount;
                 this.toAddress = state.toAddress;
                 this.pair = state.pair;
 
@@ -443,7 +454,7 @@ export default Vue.extend({
             }
 
             const state = {
-                amount: this.amount,
+                amount: this.amountInput,
                 toAddress: this.toAddress,
                 pair: this.pair,
                 processingState: processingState

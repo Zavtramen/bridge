@@ -21,7 +21,7 @@
                     <div class="BridgeProcessor-info-text-send">
                         <div>
                             {{ getStepInfoText1.send1 }}
-                            <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.amount }}</button>
+                            <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.amountReadable }}</button>
                             {{ getStepInfoText1.send2 }}<br/>
                             <button class="BridgeProcessor-info-text-copy" @click="onCopyClick">{{ getStepInfoText1.toAddress }}</button><br/>
                             {{ getStepInfoText1.withComment }}<br/>
@@ -87,6 +87,7 @@ import { getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpe
 import { PARAMS } from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
+const fromNano = TonWeb.utils.fromNano;
 
 type EthToTon = {
     transactionHash: string,
@@ -94,8 +95,8 @@ type EthToTon = {
     to: {
         workchain: number,
         address_hash: string
-    }
-    value: number,
+    },
+    value: typeof BN,
     blockTime: number,
     blockHash: string,
     from: string
@@ -182,7 +183,7 @@ export default Vue.extend({
             required: true
         },
         amount: {
-            type: Number
+            type: Object
         },
         toAddress: {
             type: String,
@@ -254,13 +255,13 @@ export default Vue.extend({
                 if (this.isFromTon) {
                     const url = PARAMS.tonTransferUrl
                         .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
-                        .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
+                        .replace('<AMOUNT>', this.amount.toString())
                         .replace('<TO_ADDRESS>', this.toAddress);
 
                     return {
                         isOnlyText: false,
                         send1: this.$t(`Bridge.networks.ton.transactionSend1`) as string,
-                        amount: String(this.amount),
+                        amountReadable: fromNano(this.amount),
                         send2: this.$t(`Bridge.networks.ton.transactionSend2`) as string,
                         toAddress: this.params.tonBridgeAddress,
                         withComment: this.$t(`Bridge.networks.ton.transactionSendComment`) as string,
@@ -384,7 +385,6 @@ export default Vue.extend({
             }
 
             if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-                const value = '';
                 navigator.clipboard.writeText(target.innerText).then(function() {
                     triggerClass('success');
                 }, function() {
@@ -399,7 +399,7 @@ export default Vue.extend({
 
             const url = PARAMS.tonTransferUrl
                 .replace('<BRIDGE_ADDRESS>', this.params.tonBridgeAddress)
-                .replace('<AMOUNT>', TonWeb.utils.toNano(this.amount).toString())
+                .replace('<AMOUNT>', this.amount.toString())
                 .replace('<TO_ADDRESS>', this.toAddress);
 
             const options = {
@@ -536,8 +536,8 @@ export default Vue.extend({
 
             return new BN(timeout).mul(new BN(4294967296)).add(new BN(query_id, 16));
         },
-        getFeeAmount(amount: typeof BN): string {
-            const rest = new BN(amount).sub(this.providerData!.feeFlat);
+        getFeeAmount(amount: typeof BN): typeof BN {
+            const rest = amount.sub(this.providerData!.feeFlat);
             const percentFee = rest.mul(this.providerData!.feeFactor).div(this.providerData!.feeBase);
             return this.providerData!.feeFlat.add(percentFee)
         },
@@ -549,7 +549,7 @@ export default Vue.extend({
             }
             return '0x' + hex;
         },
-        async getSwap(myAmount: number, myToAddress: string, myCreateTime: number): Promise<null | SwapData> {
+        async getSwap(myAmount: typeof BN, myToAddress: string, myCreateTime: number): Promise<null | SwapData> {
             console.log('getTransactions', this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             const transactions = await this.providerData!.tonweb.provider.getTransactions(this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             console.log('ton txs', transactions.length);
@@ -594,8 +594,7 @@ export default Vue.extend({
                     };
                     console.log(JSON.stringify(event));
 
-                    const myAmountNano = TonWeb.utils.toNano(myAmount);
-                    const amountAfterFee = myAmountNano.sub(this.getFeeAmount(myAmountNano));
+                    const amountAfterFee = myAmount.sub(this.getFeeAmount(myAmount));
 
                     if (amount.eq(amountAfterFee) && event.receiver.toLowerCase() === myToAddress.toLowerCase()) {
                         return event;
@@ -761,17 +760,15 @@ export default Vue.extend({
 
             const fromAddress = this.provider.myAddress;
             const toAddress = this.toAddress;
-            const amount = this.amount;
 
             const addressTon = new TonWeb.utils.Address(toAddress);
             const wc = addressTon.wc;
             const hashPart = TonWeb.utils.bytesToHex(addressTon.hashPart);
-            const amountUnit = TonWeb.utils.toNano(amount).toNumber(); // TODO, possible overflow
 
             let receipt;
 
             try {
-                receipt = await this.providerData!.wtonContract.methods.burn(amountUnit, {
+                receipt = await this.providerData!.wtonContract.methods.burn(this.amount, {
                     workchain: wc,
                     address_hash: '0x' + hashPart
                 }).send({from: fromAddress})
@@ -798,7 +795,7 @@ export default Vue.extend({
                         workchain: wc,
                         address_hash: hashPart
                     },
-                    value: amountUnit
+                    value: this.amount
                 };
 
                 this.state.step = 2;
@@ -832,10 +829,11 @@ export default Vue.extend({
             const totalLocked = getNumber(bridgeData[1]);
             const collectorWc = getNumber(bridgeData[2]);
             const collectorAddr = bridgeData[3][1]; // string
-            const feeFlat = new BN(getNumber(bridgeData[4]));
-            const feeNetwork = new BN(getNumber(bridgeData[5]));
-            const feeFactor = new BN(getNumber(bridgeData[6]));
-            const feeBase = new BN(getNumber(bridgeData[7]));
+
+            const feeFlat = new BN(bridgeData[4][1].slice(2), 16);
+            const feeNetwork = new BN(bridgeData[5][1].slice(2), 16);
+            const feeFactor = new BN(bridgeData[6][1].slice(2), 16);
+            const feeBase = new BN(bridgeData[7][1].slice(2), 16);
 
             const res: ProviderData = {
                 blockNumber: 0,
@@ -871,11 +869,11 @@ export default Vue.extend({
             }
 
             if (!this.isFromTon) {
-                const userErcBalance = parseFloat(TonWeb.utils.fromNano(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call())));
-                if (this.amount > userErcBalance) {
+                const userErcBalance = new BN(await (this.providerData!.wtonContract.methods.balanceOf(this.provider.myAddress).call()));
+                if (this.amount.gt(userErcBalance)) {
                     this.$emit('error', {
                         'input': 'amount',
-                        'message': (this.$t('Bridge.errors.toncoinBalance') as string).replace('<BALANCE>', String(userErcBalance))
+                        'message': (this.$t('Bridge.errors.toncoinBalance') as string).replace('<BALANCE>', fromNano(userErcBalance).toString())
                     });
                     this.isInitInProgress = false;
                     return;
