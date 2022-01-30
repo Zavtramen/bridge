@@ -197,6 +197,7 @@ export default Vue.extend({
 
          &[disabled] {
             color: @color-text-secondary;
+            -webkit-text-fill-color: @color-text-secondary;
         }
 
         @media (max-width: 800px) {

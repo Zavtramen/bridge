@@ -77,7 +77,7 @@
 import Vue from 'vue'
 import Web3 from 'web3';
 import TonWeb from 'tonweb';
-import QRCode from 'easyqrcodejs';
+import QRCodeStyling from 'qr-code-styling';
 import Hash from "eth-lib/lib/hash";
 import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
@@ -403,15 +403,35 @@ export default Vue.extend({
                 .replace('<TO_ADDRESS>', this.toAddress);
 
             const options = {
-                text: url,
-                width: 600,
-                height: 600,
-                logo: require("assets/pics/gem@large.png"),
-                logoWidth: 142,
-                logoHeight: 142,
-                correctLevel: QRCode.CorrectLevel.L
+                data: url,
+                width: 225 * window.devicePixelRatio,
+                height: 225 * window.devicePixelRatio,
+                image: require("assets/pics/gem@large.png"),
+                dotsOptions: {
+                    color: "#000000",
+                    type: "extra-rounded" //'rounded' 'dots' 'classy' 'classy-rounded' 'square' 'extra-rounded'
+                },
+                cornersSquareOptions: {
+                    color: "#000000",
+                    type: "extra-rounded" //'dot' 'square' 'extra-rounded'
+                },
+                cornersDotOptions: {
+                    color: "#000000",
+                    type: "dot" //'dot' 'square'
+                },
+                imageOptions: {
+                    hideBackgroundDots: true,
+                    crossOrigin: "use-credentials",
+                    imageSize: 1
+                },
+                qrOptions: {
+                    errorCorrectionLevel: 'L'
+                }
             };
-            new QRCode(this.$refs.qrcode, options);
+
+            const qrCode = new QRCodeStyling(options);
+            qrCode.append(this.$refs.qrcode);
+            // qrCode.download({ name: "qr", extension: "svg" });
         },
         resetState(): void {
             this.state.swapId = '';
@@ -1162,7 +1182,7 @@ export default Vue.extend({
     &-info-text-QRCode {
         margin-top: 16px;
         width: 100%;
-        height: 190px;
+        height: 225px;
         display: flex;
         justify-content: center;
         align-items: center;
