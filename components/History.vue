@@ -393,7 +393,7 @@ export default Vue.extend({
             this.bridge.amount = new BN(transactionData.amount);
             this.bridge.toAddress = transactionData.addressEvm;
         },
-        async onBridgeProcessorReady(): void {
+        async onBridgeProcessorReady(): Promise<void> {
             //prepare for minting, collect oracles votes and so on
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignoree
