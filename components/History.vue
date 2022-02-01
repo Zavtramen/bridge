@@ -64,7 +64,8 @@
                 <div class="History-noTransfers" v-if="!dataRendered.length && !isLoading">{{$t(`Bridge.history.notFound`)}}</div>
 
                 <BridgeProcessor
-                    v-if="bridge.isActive"
+                    v-show="false"
+                    v-if="bridge.isActive && provider"
                     ref="bridgeProcessor"
                     :key="bridge.pair"
                     :is-testnet="isTestnet"
