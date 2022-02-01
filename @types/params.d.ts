@@ -16,6 +16,10 @@ type ParamsNetwork = {
 
 type Params = {
     tonTransferUrl: string,
+    tonExplorerUrl: {
+        main: string,
+        test: string
+    },
     appName: string,
     appLogoUrl: string,
     networks: {

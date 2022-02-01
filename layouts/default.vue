@@ -114,6 +114,6 @@ export default Vue.extend({
 
     a, a:hover, a:active {
         text-decoration: none;
-        word-break: break-all;
+        // word-break: break-all;
     }
 </style>

@@ -4,123 +4,137 @@
             :is-testnet="isTestnet"
             :show-menu="isConnected && walletsPopupState === 'closed'"
             :provider="provider"
-            :disable-disconnect="isTransferInProgress"></Header>
+            :is-history-shown="history.isShown"
+            :disable-disconnect="isTransferInProgress">
+        </Header>
 
-        <main class="Bridge-content">
-            <div class="Bridge-img" :class="{isFromTon}">
-                <div class="Bridge-imgAspect"></div>
-            </div>
-            <div class="Bridge-form">
-                <div class="Bridge-switchers" :class="{isFromTon}" :key="isFromTon">
-                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
-                        <div class="Bridge-switcherTitle">
-                            <span>{{$t(`Bridge.networks.ton.${netTypeName}.nameSwitcher`)}}<em></em></span>
-                            <ul class="Bridge-switcherList" :class="{ left: isFromTon, right: !isFromTon}">
-                                <li
-                                    v-for="(item, index) in fromPairs"
-                                    :key="item"><button :disabled="index === 0" @click="onPairClick(true, item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
-                            </ul>
+        <div class="Bridge-content" :style="contentStyle">
+            <div></div>
+            <main>
+                <div class="Bridge-img" :class="{isFromTon}">
+                    <div class="Bridge-imgAspect"></div>
+                </div>
+                <div class="Bridge-form">
+                    <div class="Bridge-switchers" :class="{isFromTon}" :key="isFromTon">
+                        <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                            <div class="Bridge-switcherTitle">
+                                <span>{{$t(`Bridge.networks.ton.${netTypeName}.nameSwitcher`)}}<em></em></span>
+                                <ul class="Bridge-switcherList" :class="{ left: isFromTon, right: !isFromTon}">
+                                    <li
+                                        v-for="(item, index) in fromPairs"
+                                        :key="item"><button :disabled="index === 0" @click="onPairClick(true, item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
+                                </ul>
+                            </div>
+                            <div class="Bridge-switcherAnno">{{$t(`Bridge.networks.ton.${netTypeName}.coin`)}}</div>
                         </div>
-                        <div class="Bridge-switcherAnno">{{$t(`Bridge.networks.ton.${netTypeName}.coin`)}}</div>
+
+                        <button
+                            class="Bridge-switcher-arrow"
+                            :disabled="isPairsBlocked"
+                            @click="toggleFromTon"></button>
+
+                        <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
+                            <div class="Bridge-switcherTitle">
+                                <span>{{$t(`Bridge.networks.${pair}.${netTypeName}.nameSwitcher`)}}<em></em></span>
+                                <ul class="Bridge-switcherList" :class="{ left: !isFromTon, right: isFromTon}">
+                                    <li
+                                        v-for="(item, index) in toPairs"
+                                        :key="item"><button :disabled="index === 0" @click="onPairClick(item === 'ton', item === 'ton' ? pair : item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
+                                </ul>
+                            </div>
+                            <div class="Bridge-switcherAnno"><a :href="pairNetworkCoinUrl" target="_blank">{{$t(`Bridge.networks.${pair}.${netTypeName}.coin`)}}</a></div>
+                        </div>
                     </div>
 
-                    <button
-                        class="Bridge-switcher-arrow"
-                        :disabled="isPairsBlocked"
-                        @click="toggleFromTon"></button>
+                    <CustomInput
+                        key="token"
+                        :disabled="true"
+                        :label="$t('Bridge.sendToken')"
+                        type="text"
+                        :dropdown="[{ label: 'Toncoin', value: 'ton' }, { label: 'Litecoin', value: 'lth' }, { label: 'Bitcoin', value: 'bth' }]"
+                        v-model="token"
+                    ></CustomInput>
 
-                    <div class="Bridge-switcher" :class="{disabled: isPairsBlocked}">
-                        <div class="Bridge-switcherTitle">
-                            <span>{{$t(`Bridge.networks.${pair}.${netTypeName}.nameSwitcher`)}}<em></em></span>
-                            <ul class="Bridge-switcherList" :class="{ left: !isFromTon, right: isFromTon}">
-                                <li
-                                    v-for="(item, index) in toPairs"
-                                    :key="item"><button :disabled="index === 0" @click="onPairClick(item === 'ton', item === 'ton' ? pair : item)">{{$t(`Bridge.networks.${item}.${netTypeName}.name`)}}</button></li>
-                            </ul>
-                        </div>
-                        <div class="Bridge-switcherAnno"><a :href="pairNetworkCoinUrl" target="_blank">{{$t(`Bridge.networks.${pair}.${netTypeName}.coin`)}}</a></div>
+                    <CustomInput
+                        key="amountInput"
+                        :disabled="isInputsBlocked"
+                        :label="$t('Bridge.amountOfTon')"
+                        type="number"
+                        :error="errors.amount"
+                        @changed="errors.amount = ''"
+                        @blur="checkInputs"
+                        v-model="amountInput"
+                    ></CustomInput>
+
+                    <CustomInput
+                        key="toAddress"
+                        :disabled="isInputsBlocked"
+                        :label="$t(`Bridge.addressInputLabel`)"
+                        type="text"
+                        :error="errors.toAddress"
+                        @changed="errors.toAddress = ''"
+                        @blur="checkInputs"
+                        v-model="toAddress"
+                    ></CustomInput>
+
+                    <div class="Bridge-willReceive" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading) && willReceive" :class="{isFromTon}">{{willReceive}}</div>
+
+                    <div class="Bridge-bridgeWrapper">
+                        <button
+                             v-if="!isConnected"
+                            class="Bridge-connect"
+                            @click="walletsPopupState = 'opened'">{{$t('Bridge.connectWallet')}}</button>
+
+                        <div class="Bridge-bridgeLoader" v-if="isConnected && bridgeProcessorIsLoading"></div>
+
+                        <BridgeProcessor
+                            v-if="isConnected"
+                            ref="bridgeProcessor"
+                            :key="pair"
+                            :is-testnet="isTestnet"
+                            :is-recover="isRecover"
+                            :lt="lt"
+                            :hash="hash"
+                            :is-from-ton="isFromTon"
+                            :pair="pair"
+                            :amount="amount"
+                            :to-address="toAddress"
+                            :provider="provider"
+                            :is-inputs-valid="isInputsValid"
+                            @transfer-in-progress="onTransferInProgress"
+                            @state-changed="getPairGasFee__debounced"
+                            @reset-state="resetState"
+                            @save-state="saveState"
+                            @delete-state="deleteState"
+                            @ready="onBridgeProcessorReady"
+                            @error="onBridgeTransferError"
+                        ></BridgeProcessor>
                     </div>
+
+                    <div class="Bridge-pairFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{pairFee}}</div>
+                    <div class="Bridge-bridgeFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{bridgeFee}}</div>
                 </div>
+            </main>
 
-                <CustomInput
-                    key="token"
-                    :disabled="true"
-                    :label="$t('Bridge.sendToken')"
-                    type="text"
-                    :dropdown="[{ label: 'Toncoin', value: 'ton' }, { label: 'Litecoin', value: 'lth' }, { label: 'Bitcoin', value: 'bth' }]"
-                    v-model="token"
-                ></CustomInput>
+            <Footer></Footer>
+        </div>
 
-                <CustomInput
-                    key="amountInput"
-                    :disabled="isInputsBlocked"
-                    :label="$t('Bridge.amountOfTon')"
-                    type="number"
-                    :error="errors.amount"
-                    @changed="errors.amount = ''"
-                    @blur="checkInputs"
-                    v-model="amountInput"
-                ></CustomInput>
+        <WalletsPopup
+            v-if="walletsPopupState !== 'closed'"
+            :params="params"
+            :uncancellable="walletsPopupState === 'opened-uncancellable'"
+            @wallet-connected="onWalletConnected"
+            @cancel="walletsPopupState = 'closed'">
+        </WalletsPopup>
 
-                <CustomInput
-                    key="toAddress"
-                    :disabled="isInputsBlocked"
-                    :label="$t(`Bridge.addressInputLabel`)"
-                    type="text"
-                    :error="errors.toAddress"
-                    @changed="errors.toAddress = ''"
-                    @blur="checkInputs"
-                    v-model="toAddress"
-                ></CustomInput>
-
-                <div class="Bridge-willReceive" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading) && willReceive" :class="{isFromTon}">{{willReceive}}</div>
-
-                <div class="Bridge-bridgeWrapper">
-                    <button
-                         v-if="!isConnected"
-                        class="Bridge-connect"
-                        @click="walletsPopupState = 'opened'">{{$t('Bridge.connectWallet')}}</button>
-
-                    <div class="Bridge-bridgeLoader" v-if="isConnected && bridgeProcessorIsLoading"></div>
-
-                    <BridgeProcessor
-                        v-if="isConnected"
-                        ref="bridgeProcessor"
-                        :key="pair"
-                        :is-testnet="isTestnet"
-                        :is-recover="isRecover"
-                        :lt="lt"
-                        :hash="hash"
-                        :is-from-ton="isFromTon"
-                        :pair="pair"
-                        :amount="amount"
-                        :to-address="toAddress"
-                        :provider="provider"
-                        :is-inputs-valid="isInputsValid"
-                        @transfer-in-progress="onTransferInProgress"
-                        @state-changed="getPairGasFee__debounced"
-                        @reset-state="resetState"
-                        @save-state="saveState"
-                        @delete-state="deleteState"
-                        @ready="onBridgeProcessorReady"
-                        @error="onBridgeTransferError"
-                    ></BridgeProcessor>
-                </div>
-
-                <div class="Bridge-pairFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{pairFee}}</div>
-                <div class="Bridge-bridgeFee" v-show="(!isTransferInProgress || !isConnected || bridgeProcessorIsLoading)">{{bridgeFee}}</div>
-
-                <WalletsPopup
-                    v-if="walletsPopupState !== 'closed'"
-                    :params="params"
-                    :uncancellable="walletsPopupState === 'opened-uncancellable'"
-                    @wallet-connected="onWalletConnected"
-                    @cancel="walletsPopupState = 'closed'"
-                ></WalletsPopup>
-            </div>
-        </main>
-
-        <Footer></Footer>
+        <History
+            v-if="history.isShown"
+            :provider="provider"
+            :is-testnet="isTestnet"
+            :network="history.network"
+            :address="history.address"
+            @open-wallets-popup="walletsPopupState = 'opened'">
+        </History>
     </div>
 </template>
 
@@ -134,6 +148,7 @@ import { PARAMS } from '~/utils/constants';
 import CustomInput from '~/components/CustomInput.vue';
 import Header from '~/components/Header.vue';
 import Footer from '~/components/Footer.vue';
+import History from '~/components/History.vue';
 import { Provider } from '~/utils/providers/provider';
 
 const PAIRS = ['eth', 'bsc'];
@@ -161,6 +176,12 @@ type ComponentData = {
     isConnected: boolean,
     walletsPopupState: string,
     bridgeProcessorIsLoading: boolean,
+    history: {
+        address: string,
+        network: string,
+        isShown: boolean
+    },
+    mainPageFixedPosition: number,
     errors: {
         amount: string,
         toAddress: string
@@ -175,7 +196,8 @@ export default Vue.extend({
         'WalletsPopup': () => import('~/components/WalletsPopup.vue'),
         CustomInput,
         Header,
-        Footer
+        Footer,
+        History
     },
 
     head(): object {
@@ -205,6 +227,12 @@ export default Vue.extend({
             isConnected: false,
             walletsPopupState: 'closed',
             bridgeProcessorIsLoading: false,
+            history: {
+                address: '',
+                network: '',
+                isShown: false
+            },
+            mainPageFixedPosition: 0,
             errors: {
                 amount: '',
                 toAddress: ''
@@ -284,10 +312,39 @@ export default Vue.extend({
         },
         isInputsBlocked(): boolean {
             return this.isTransferInProgress;
+        },
+        contentStyle(): object {
+            if (this.history.isShown) {
+                return {
+                    position: 'fixed',
+                    top: -this.mainPageFixedPosition + 'px'
+                }
+            } else {
+                return {};
+            }
         }
     },
 
     watch: {
+        '$route.query': {
+            immediate: true,
+            handler(newVal: any) {
+                if (newVal.historyAddress && newVal.historyNetwork) {
+                    this.history.isShown = true;
+                    this.history.address = newVal.historyAddress;
+                    this.history.network = newVal.historyNetwork;
+                } else {
+                    this.history.isShown = false;
+                }
+            }
+        },
+        'history.isShown'(newVal: boolean, oldVal: boolean): void {
+            if (newVal) {
+                this.mainPageFixedPosition = window.pageYOffset;
+            } else {
+                this.mainPageFixedPosition = 0;
+            }
+        },
         isFromTon(newVal: boolean, oldVal: boolean): void {
             this.getPairGasFee__debounced();
 
@@ -549,20 +606,26 @@ export default Vue.extend({
 
 @{r} {
     position: relative;
-    min-height: 100%;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    grid-template-columns: 100%;
+    height: 100%;
 
     &-content {
+        width: 100%;
+        min-height: 100%;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 117px 40px 50px;
+        justify-content: space-between;
 
-        @media (max-width: 800px) {
-            padding: 100px 16px 50px;
+        main {
+            flex: 1 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 117px 40px 50px;
+
+            @media (max-width: 800px) {
+                padding: 100px 16px 50px;
+            }
         }
     }
 

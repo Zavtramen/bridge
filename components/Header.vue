@@ -3,21 +3,21 @@
         <div class="Header-testnet" v-if="isTestnet">{{ $t(`Bridge.testnetMessage`) }}</div>
         <div class="Header-wrapper">
             <component
-                :is="!hasLogoLink ? 'div' : 'NuxtLink'"
-                :to="localePath('/')"
+                :is="isHistoryShown ? 'NuxtLink' : 'div'"
+                :to="parentUrl"
                 class="Header-logo"
-                :class="{ hasLogoLink }">
+                :class="{ isHistoryShown }">
                 <span class="Header-logoIcon"></span>
                 <span class="Header-logoLabel">{{ $t(`Bridge.logoLabel`) }}</span>
             </component>
             <div class="Header-menu">
                 <template v-if="showMenu">
-                    <nuxt-link :to="historyUrl" class="Header-menuHistory">{{$t(`Bridge.transferHistory`)}}</nuxt-link>
+                    <nuxt-link :to="historyUrl" class="Header-menuHistory" v-if="historyUrl && !isHistoryShown">{{$t(`Bridge.transferHistory`)}}</nuxt-link>
                     <div class="Header-menuWrapper">
                         <div class="Header-menuAddress" :data-icon="provider.name"><span>{{ address }}</span></div>
                         <ul class="Header-menuList">
                             <li data-id="address"><span>{{ address }}</span></li>
-                            <li data-id="history"><nuxt-link :to="historyUrl">{{$t(`Bridge.transferHistory`)}}</nuxt-link></li>
+                            <li data-id="history"><nuxt-link :to="historyUrl" v-if="historyUrl && !isHistoryShown">{{$t(`Bridge.transferHistory`)}}</nuxt-link></li>
                             <li data-id="disconnect"><button @click="onDisconnectClick" :disabled="disableDisconnect">{{$t(`Bridge.disconnectWallet`)}}</button></li>
                         </ul>
                     </div>
@@ -29,6 +29,7 @@
 
 <script lang="ts">
 import Vue from 'vue';
+import { PARAMS } from '~/utils/constants';
 
 type ComponentData = {
     isScrolled: boolean
@@ -50,6 +51,10 @@ export default Vue.extend({
         disableDisconnect: {
             type: Boolean,
             default: false
+        },
+        isHistoryShown: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -60,28 +65,38 @@ export default Vue.extend({
     },
 
     computed: {
-        hasLogoLink(): boolean {
-            return this.$route.path !== '/';
-        },
         address(): string {
             if (!this.provider) {
                 return '';
             }
             return this.provider.myAddress.slice(0, 6) + '…' + this.provider.myAddress.slice(-4);
         },
+        parentUrl(): string {
+            const {historyAddress, historyNetwork, ...query} = this.$nuxt.$route.query;
+            return this.generateUrlWithQuery(query);
+        },
         historyUrl(): string {
-            if (!this.provider) {
+            if (!this.provider || !this.provider.myAddress) {
                 return '';
             }
 
-            const urlVars = [];
-            if (this.isTestnet) {
-                urlVars.push('testnet=true');
-            }
-            if (this.provider.myAddress) {
-                urlVars.push('toAddress=' + encodeURIComponent(this.provider.myAddress));
-            }
-            return this.localePath('/history' + (urlVars ? '?' + urlVars.join('&') : ''));
+            let network = '';
+            Object.keys(PARAMS.networks).forEach((netKey: string) => {
+                const net = PARAMS.networks[netKey as keyof typeof PARAMS.networks];
+                Object.keys(net).forEach((subnetKey: string) => {
+                    const subnet = net[subnetKey as keyof typeof net];
+                    if (subnet.chainId === this.provider.chainId) {
+                        network = netKey;
+                    }
+                });
+            });
+
+            const query = {
+                ...this.$nuxt.$route.query,
+                historyAddress: this.provider.myAddress,
+                historyNetwork: network
+            };
+            return this.generateUrlWithQuery(query);
         }
     },
 
@@ -94,6 +109,13 @@ export default Vue.extend({
     },
 
     methods: {
+        generateUrlWithQuery(query: any): string {
+            const urlVars: string[] = Object.keys(query).map((key: string) => {
+                return key + '=' + encodeURIComponent(query[key]);
+            });
+
+            return this.localePath('/' + (urlVars ? '?' + urlVars.join('&') : ''));
+        },
         onScroll(): void {
             this.isScrolled = window.pageYOffset > 0;
         },
@@ -203,10 +225,6 @@ export default Vue.extend({
             @media (max-width: 560px) {
                 font-size: 14px;
             }
-        }
-
-        &.hasLogoLink &Label {
-            color: @c-primary;
         }
     }
 

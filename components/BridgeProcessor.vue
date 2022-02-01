@@ -151,7 +151,6 @@ type State = {
 }
 
 type ComponentData = {
-    newBlockHeadersSubscription: any,
     updateStateInterval: null | ReturnType<typeof setInterval>,
     providerData: ProviderData | null,
     state: State,
@@ -206,7 +205,6 @@ export default Vue.extend({
 
     data(): ComponentData {
         return {
-            newBlockHeadersSubscription: null,
             updateStateInterval: null,
             providerData: null,
             ethToTon: null,
@@ -453,9 +451,9 @@ export default Vue.extend({
 
             this.$emit('reset-state');
         },
-        async loadState(processingState: State): Promise<void> {
+        async loadState(processingState: State): Promise<boolean> {
             if (!processingState) {
-                 return;
+                 return false;
             }
 
             this.isInitInProgress = true;
@@ -465,11 +463,13 @@ export default Vue.extend({
             this.isInitInProgress = false;
 
             if (!this.providerData) {
-                return;
+                return false;
             }
             Object.assign(this.state, processingState);
 
             await this.updateState();
+
+            return true;
         },
         saveState(): void {
             this.$emit('save-state', this.state);
@@ -509,6 +509,9 @@ export default Vue.extend({
                 this.state.votes = this.isFromTon ? await this.getEthVote(this.state.swapId) : await this.getTonVote(this.state.queryId);
                 if (this.state.votes && this.state.votes!.length >= this.providerData!.oraclesTotal * 2 / 3) {
                     this.state.step = this.isFromTon ? 4 : 5;
+                    if (this.isFromTon) {
+                        this.$emit('ready-to-mint');
+                    }
                 }
             }
         },
@@ -736,6 +739,7 @@ export default Vue.extend({
             const isProviderReady = await this.checkProviderIsReady();
 
             if (!isProviderReady) {
+                this.$emit('mint-failed');
                 return;
             }
             this.isMintingInProgress = true;
@@ -763,6 +767,7 @@ export default Vue.extend({
                     });
             } catch (e) {
                 console.error(e);
+                this.$emit('mint-failed');
                 this.isMintingInProgress = false;
                 return;
             }
@@ -772,8 +777,10 @@ export default Vue.extend({
             if (receipt.status) {
                 this.state.step = 5;
                 this.deleteState();
+                this.$emit('minted-successfully');
             } else {
                 console.error('transaction fail', receipt);
+                this.$emit('mint-failed');
             }
         },
         async burn(): Promise<void> {

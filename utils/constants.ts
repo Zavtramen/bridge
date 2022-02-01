@@ -2,6 +2,10 @@ export const PARAMS: Params = {
     "appName": "TON Bridge",
     "appLogoUrl": "https://ton.org/bridge/favicon.ico",
     "tonTransferUrl": "ton://transfer/<BRIDGE_ADDRESS>?amount=<AMOUNT>&text=swapTo%23<TO_ADDRESS>",
+    "tonExplorerUrl": {
+        "main": "https://tonscan.org/address/<ADDRESS>",
+        "test": "https://tonscan.org/address/<ADDRESS>"
+    },
     "networks": {
         "eth": {
             "main": {

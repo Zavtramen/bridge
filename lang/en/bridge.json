@@ -2,7 +2,6 @@
     "logoLabel": "Bridge",
     "connectWallet": "Connect Wallet",
     "testnetMessage": "This is the testnet version. ",
-    "historyPageTitle": "History",
     "providers": {
         "metamask": "Metamask",
         "walletConnect": "WalletConnect",
@@ -10,6 +9,7 @@
     },
     "networks": {
         "ton": {
+            "currency": "Toncoin",
             "transactionCompleted": "TON transaction completed successfully",
             "transactionSend1": "Please send ",
             "transactionSend2": "Toncoin to the address",
@@ -23,17 +23,20 @@
             "main": {
                 "name": "The Open Network",
                 "nameSwitcher": "The Open\nNetwork",
+                "nameShort": "TON",
                 "coin": "Toncoin",
                 "coinShort": "Toncoin"
             },
             "test" : {
                 "name": "TON Testnet",
                 "nameSwitcher": "TON\nTestnet",
+                "nameShort": "TON",
                 "coin": "Toncoin",
                 "coinShort": "Toncoin"
             }
         },
         "eth": {
+            "currency": "ETH",
             "pageTitle": "TON-ETH Bridge",
             "gasFee": "Ethereum gas fee ~ <FEE> ETH",
             "transactionCompleted": "Ethereum transaction completed successfully",
@@ -47,17 +50,20 @@
             "main": {
                 "name": "Ethereum Network",
                 "nameSwitcher": "Ethereum\nNetwork",
+                "nameShort": "ETH",
                 "coin": "TONCOIN (ERC20)",
                 "coinShort": "TONCOIN"
             },
             "test" : {
                 "name": "Ethereum Ropsten",
                 "nameSwitcher": "Ethereum\nRopsten",
+                "nameShort": "ETH",
                 "coin": "TONCOIN (ERC20)",
                 "coinShort": "TONCOIN"
             }
         },
         "bsc": {
+            "currency": "BSC",
             "pageTitle": "TON-BSC Bridge",
             "gasFee": "BSC gas fee ~ <FEE> BNB",
             "transactionCompleted": "BSC transaction completed successfully",
@@ -71,12 +77,14 @@
             "main": {
                 "name": "Binance Smart Chain",
                 "nameSwitcher": "Binance\nSmart Chain",
+                "nameShort": "BSC",
                 "coin": "TONCOIN (BEP-20)",
                 "coinShort": "TONCOIN"
             },
             "test" : {
                 "name": "BSC Testnet",
                 "nameSwitcher": "BSC\nTestnet",
+                "nameShort": "BSC",
                 "coin": "TONCOIN (BEP-20)",
                 "coinShort": "TONCOIN"
             }
@@ -120,5 +128,20 @@
         "wrongProviderNetwork": "Set chain to <NETWORK> in <PROVIDER>",
         "cantGetAddress": "Can't get account address",
         "providerIsDisconnected": "<PROVIDER> is disconnected"
+    },
+
+    "history": {
+        "title": "Recent history",
+        "recentHistory": "Recent history",
+        "age": "Date",
+        "amountFrom": "Amount / From (Network)",
+        "amountTo": "Amount Received / To (Network)",
+        "fee": "Gas / Bridge Fee",
+        "status": "Status",
+        "completed": "completed",
+        "getToncoin": "Get TONCOIN",
+        "connect": "Connect",
+        "oracles": "<COUNT> of oracles",
+        "notFound": "No transfers found"
     }
 }
