@@ -119,14 +119,6 @@ export default Vue.extend({
 @r: .CustomInput;
 
 @{r} {
-    @color-background: #FFF;
-    @color-placeholders: #757575;
-    @color-primary: rgb(51,144,236);
-    @color-error: #e53935;
-    @color-text-secondary: rgb(112,117,121);
-    @color-borders-input: #AAA;
-    @color-text: #222222;
-
     position: relative;
     margin-bottom: 30px;
     width: 100%;
@@ -156,10 +148,10 @@ export default Vue.extend({
         position: absolute;
         left: 12px;
         top: 22px;
-        background-color: @color-background;
+        background-color: @c-background;
         font-size: 17px;
-        color: @color-placeholders;
-        transition: transform .15s ease-out,color .15s ease-out;
+        color: @c-label;
+        transition: transform @d-hover ease-out,color @d-hover ease-out;
         cursor: text;
         pointer-events: none;
         transform-origin: left center;
@@ -184,20 +176,20 @@ export default Vue.extend({
         width: 100%;
         height: 50px;
         padding: 9px 18px;
-        border: 1px solid @color-borders-input;
+        border: 1px solid @c-outline;
         border-radius: 8px;
-        color: @color-text;
-        background-color: @color-background;
+        color: @c-text;
+        background-color: @c-background;
         outline: none;
-        transition: border-color .15s ease, 9999s background-color; // 9999s to skip browser styles for values
+        transition: border-color @d-hover ease, 9999s background-color; // 9999s to skip browser styles for values
         word-break: break-word;
         -webkit-appearance: none;
         font-size: 17px;
         line-height: 20px;
 
          &[disabled] {
-            color: @color-text-secondary;
-            -webkit-text-fill-color: @color-text-secondary;
+            color: @c-text-secondary;
+            -webkit-text-fill-color: @c-text-secondary;
         }
 
         @media (max-width: 800px) {
@@ -220,7 +212,7 @@ export default Vue.extend({
         right: 22px;
         height: 0;
         width: 0;
-        color: @color-borders-input;
+        color: @c-text;
         border: solid currentColor;
         border-radius: 1px;
         border-width: 0 2px 2px 0;
@@ -229,7 +221,7 @@ export default Vue.extend({
         vertical-align: middle;
         margin-top: -9px;
         transform: rotate(45deg);
-        transition: .2s all;
+        transition: @d-hover all;
         pointer-events: none;
 
         @media (max-width: 800px) {
@@ -241,12 +233,16 @@ export default Vue.extend({
         }
     }
 
+    &.disabled &-arrow {
+        color: @c-text-secondary;
+    }
+
     &-dropdown {
-        background: #FFF;
+        background: @c-background;
         border-radius: 16px;
-        box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
+        box-shadow: 0px 8px 24px @c-panel-shadow;
         box-sizing: border-box;
-        color: #303757;
+        color: @c-text-light;
         font-size: 17px;
         left: 0;
         line-height: 20px;
@@ -258,7 +254,7 @@ export default Vue.extend({
         top: 100%;
         word-break: break-word;
         white-space: normal;
-        z-index: 1;
+        z-index: @z-input-dropdown;
         text-align: left;
 
         transition: all 0 ease-in-out;
@@ -277,7 +273,7 @@ export default Vue.extend({
         li {
             button {
                 padding: 10px 0;
-                color: #303757;
+                color: @c-text-light;
                 font-weight: 700;
                 cursor: pointer;
                 width: 100%;
@@ -285,7 +281,7 @@ export default Vue.extend({
                 .isPointer &:hover,
                 .isTouch &:active,
                 &:focus {
-                    color: #1d98dc;
+                    color: @c-primary;
                 }
 
                 @media (max-width: 800px) {
@@ -312,27 +308,27 @@ export default Vue.extend({
 
     &:not(.disabled) input:hover + &-labelWrapper label,
     &:not(.disabled) input:hover ~ &-arrow {
-        color: @color-primary;
+        color: @c-primary;
     }
 
     &:not(.disabled) input:hover {
-        border-color: @color-primary;
+        border-color: @c-primary;
     }
 
     &:not(.disabled) input:focus {
-        border-color: @color-primary;
-        box-shadow: inset 0 0 0 1px @color-primary;
-        caret-color: @color-primary;
+        border-color: @c-primary;
+        box-shadow: inset 0 0 0 1px @c-primary;
+        caret-color: @c-primary;
     }
 
     &.isDropdownOpened &-arrow {
-        color: @color-primary;
+        color: @c-primary;
         margin-top: -4px;
         transform: rotate(225deg);
     }
 
     &.isDropdownOpened &-dropdown {
-        transition: opacity 0.15s ease-in-out;
+        transition: opacity @d-hover ease-in-out;
         opacity: 1;
         visibility: inherit;
     }
@@ -352,21 +348,21 @@ export default Vue.extend({
     }
 
     &:not(.disabled) input:focus + &-labelWrapper label {
-        color: @color-primary;
+        color: @c-primary;
     }
 
     &:not(.disabled).hasData label {
-        color: @color-text-secondary;
+        color: @c-label;
     }
 
     &:not(.disabled).error input {
-        border-color: @color-error;
-        box-shadow: inset 0 0 0 1px @color-error;
-        caret-color: @color-error;
+        border-color: @c-error;
+        box-shadow: inset 0 0 0 1px @c-error;
+        caret-color: @c-error;
     }
 
     &:not(.disabled).error label {
-        color: @color-error !important;
+        color: @c-error !important;
     }
 }
 </style>

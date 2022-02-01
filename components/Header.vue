@@ -116,11 +116,11 @@ export default Vue.extend({
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 2;
+    z-index: @z-header;
 
     &.isScrolled &-wrapper {
         transform: translateY(-10px);
-        border-bottom: 1px solid #ccc;
+        border-bottom: 1px solid @c-outline;
 
         @media (max-width: 560px) {
             transform: translateY(-10px);
@@ -129,7 +129,7 @@ export default Vue.extend({
 
     &-testnet {
         position: relative;
-        background: #e53935;
+        background: @c-error;
         padding: 10px 16px;
         z-index: 1;
 
@@ -149,9 +149,9 @@ export default Vue.extend({
         justify-content: space-between;
         align-items: center;
         padding: 20px 44px 10px;
-        transition: 0.25s transform, 0.25s border;
+        transition: @d-header-collapse transform, @d-header-collapse border;
         border-bottom: 1px solid transparent;
-        background: white;
+        background: @c-background;
 
         @media (max-width: 560px) {
             padding: 20px 24px 10px;
@@ -191,10 +191,10 @@ export default Vue.extend({
 
         &Label {
             margin-left: 12px;
-            color: #303757;
+            color: @c-text-light;
             display: inline-block;
             font-size: 18px;
-            transition: 0.15s color;
+            transition: @d-hover color;
 
             // @media (max-width: 560px) {
             //     display: none;
@@ -206,7 +206,7 @@ export default Vue.extend({
         }
 
         &.hasLogoLink &Label {
-            color: #1d98dc;
+            color: @c-primary;
         }
     }
 
@@ -227,14 +227,14 @@ export default Vue.extend({
 
         &History {
             position: relative;
-            color: #303757;
+            color: @c-text-light;
             font-size: 18px;
             margin-right: 25px;
             display: inline-block;
 
             .isPointer &:hover,
             .isTouch &:active {
-                color: #1d98dc;
+                color: @c-primary;
             }
 
             @media (max-width: 800px) {
@@ -244,7 +244,7 @@ export default Vue.extend({
 
         &Address {
             position: relative;
-            color: #303757;
+            color: @c-text-light;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -253,7 +253,7 @@ export default Vue.extend({
 
             .isPointer &:hover,
             .isTouch &:active {
-                color: #1d98dc;
+                color: @c-primary;
             }
 
             span {
@@ -291,17 +291,17 @@ export default Vue.extend({
         }
 
         &Wrapper:hover &List {
-            transition: opacity 0.15s ease-in-out;
+            transition: opacity @d-hover ease-in-out;
             opacity: 1;
             visibility: inherit;
         }
 
         &List {
-            background: #fff;
+            background: @c-background;
             border-radius: 16px;
-            box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
+            box-shadow: 0px 8px 24px @c-panel-shadow;
             box-sizing: border-box;
-            color: #303757;
+            color: @c-text-light;
             font-size: 16px;
             line-height: 20px;
             list-style-type: none;
@@ -358,12 +358,7 @@ export default Vue.extend({
 
                 &[data-id="disconnect"] {
                     button {
-                        color: #F72B50;
-
-                        .isPointer &:hover,
-                        .isTouch &:active {
-                            color: #F72B50;
-                        }
+                        color: @c-error;
                     }
                 }
 
@@ -371,19 +366,19 @@ export default Vue.extend({
                     display: inline-block;
                     width: fit-content;
                     padding: 10px 0;
-                    color: #303757;
+                    color: @c-text-light;
                     font-weight: 700;
                     cursor: pointer;
                     font-size: 16px;
 
                     &[disabled] {
                         pointer-events: none;
-                        color: gray;
+                        color: @c-text-secondary;
                     }
 
                     .isPointer &:hover,
                     .isTouch &:active {
-                        color: #1d98dc;
+                        color: @c-primary;
                     }
                 }
             }

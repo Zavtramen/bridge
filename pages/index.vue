@@ -687,7 +687,7 @@ export default Vue.extend({
         }
 
         &Title:hover {
-            color: #1D98DC;
+            color: @c-primary;
 
             em {
                 transform: rotate(180deg);
@@ -705,12 +705,12 @@ export default Vue.extend({
             margin-top: 6px;
             height: 20px;
             font-size: 15px;
-            color: #757575;
+            color: @c-label;
 
             a {
                 display: inline-block;
                 text-decoration: underline;
-                color: #757575;
+                color: @c-label;
 
                 .isPointer &:hover,
                 .isTouch &:active {
@@ -740,9 +740,9 @@ export default Vue.extend({
         }
 
         &List {
-            background: #FFF;
+            background: @c-background;
             border-radius: 16px;
-            box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
+            box-shadow: 0px 8px 24px @c-panel-shadow;
             box-sizing: border-box;
             list-style-type: none;
             margin: 0;
@@ -820,7 +820,7 @@ export default Vue.extend({
 
                 button {
                     padding: 12px 0 11px;
-                    color: #303757;
+                    color: @c-text-light;
                     font-size: 16px;
                     line-height: 22px;
                     font-weight: 700;
@@ -828,7 +828,7 @@ export default Vue.extend({
 
                     .isPointer &:hover,
                     .isTouch &:active {
-                        color: #1d98dc;
+                        color: @c-primary;
                     }
 
                     @media (max-width: 800px) {
@@ -853,6 +853,11 @@ export default Vue.extend({
         margin-right: 16px;
         margin-bottom: 3px;
 
+        .isPointer &:hover,
+        .isTouch &:active {
+            opacity: 0.85;
+        }
+
         &[disabled] {
             cursor: default;
             background-image: url('~assets/pics/arrow-disabled.svg');
@@ -870,7 +875,7 @@ export default Vue.extend({
     &-willReceive {
         margin-top: -10px;
         font-size: 15px;
-        color: #858585;
+        color: @c-text-secondary;
 
         @media (max-width: 800px) {
             font-size: 14px;
@@ -901,7 +906,7 @@ export default Vue.extend({
 
     &-connect {
         -webkit-appearance: none;
-        background-color: #1d98dc;
+        background-color: @c-primary;
         border-radius: 25px;
         font-weight: 700;
         color: white;
@@ -912,7 +917,7 @@ export default Vue.extend({
 
         .isPointer &:hover,
         .isTouch &:active {
-            background-color: #5fb8ea;
+            background-color: rgba(@c-primary, 0.85);
         }
 
         @media (max-width: 800px) {
@@ -936,7 +941,7 @@ export default Vue.extend({
             display: block;
             width: 24px;
             height: 24px;
-            border: 3px solid #1d98dc;
+            border: 3px solid @c-primary;
             border-right-color: white;
             border-radius: 50%;
             animation: loading-animation-spin 1500ms infinite linear;
@@ -951,7 +956,7 @@ export default Vue.extend({
 
     &-pairFee,
     &-bridgeFee  {
-        color: #AAAAAA;
+        color: @c-text-secondary-light;
         font-size: 14px;
         line-height: 20 / 14;
         letter-spacing: -0.1px;

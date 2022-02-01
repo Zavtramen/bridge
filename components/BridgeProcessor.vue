@@ -77,7 +77,12 @@
 import Vue from 'vue'
 import Web3 from 'web3';
 import TonWeb from 'tonweb';
-import QRCodeStyling from 'qr-code-styling';
+import QRCodeStyling, {
+  ErrorCorrectionLevel,
+  DotType,
+  CornerSquareType,
+  CornerDotType
+} from 'qr-code-styling';
 import Hash from "eth-lib/lib/hash";
 import WTON from '~/assets/WTON.json';
 import { ethers } from "ethers";
@@ -409,15 +414,15 @@ export default Vue.extend({
                 image: require("assets/pics/gem@large.png"),
                 dotsOptions: {
                     color: "#000000",
-                    type: "extra-rounded" //'rounded' 'dots' 'classy' 'classy-rounded' 'square' 'extra-rounded'
+                    type: "extra-rounded" as DotType //'rounded' 'dots' 'classy' 'classy-rounded' 'square' 'extra-rounded'
                 },
                 cornersSquareOptions: {
                     color: "#000000",
-                    type: "extra-rounded" //'dot' 'square' 'extra-rounded'
+                    type: "extra-rounded" as CornerSquareType //'dot' 'square' 'extra-rounded'
                 },
                 cornersDotOptions: {
                     color: "#000000",
-                    type: "dot" //'dot' 'square'
+                    type: "dot" as CornerDotType //'dot' 'square'
                 },
                 imageOptions: {
                     hideBackgroundDots: true,
@@ -425,12 +430,12 @@ export default Vue.extend({
                     imageSize: 1
                 },
                 qrOptions: {
-                    errorCorrectionLevel: 'L'
+                    errorCorrectionLevel: 'L' as ErrorCorrectionLevel
                 }
             };
 
             const qrCode = new QRCodeStyling(options);
-            qrCode.append(this.$refs.qrcode);
+            qrCode.append(this.$refs.qrcode as HTMLElement);
             // qrCode.download({ name: "qr", extension: "svg" });
         },
         resetState(): void {
@@ -926,7 +931,7 @@ export default Vue.extend({
     &-cancel,
     &-info-text-openWallet {
         -webkit-appearance: none;
-        background-color: #1D98DC;
+        background-color: @c-primary;
         display: inline-block;
         border-radius: 25px;
         color: white;
@@ -939,12 +944,12 @@ export default Vue.extend({
 
         .isPointer &:hover,
         .isTouch &:active {
-            background-color: #5fb8ea;
+            background-color: rgba(@c-primary, .85);
         }
 
         &[disabled] {
             pointer-events: none;
-            background-color: #AAAAAA;
+            background-color: @c-text-secondary-light;
         }
 
         &.showLoader {
@@ -962,10 +967,10 @@ export default Vue.extend({
             transform: translate(8px, 3px);
             width: 12px;
             height: 12px;
-            border: 3px solid #fff;
+            border: 3px solid white;
             border-left: 3px solid transparent;
             border-radius: 50%;
-            animation: loading-animation-spin 2s infinite linear;
+            animation: loading-animation-spin @d-loader infinite linear;
 
             @keyframes loading-animation-spin {
                 to {
@@ -978,13 +983,13 @@ export default Vue.extend({
     &-cancel {
         margin-top: -10px;
         margin-bottom: 40px;
-        background-color: white;
-        color: #e53935;
-        box-shadow: inset 0 0 0 2px #e53935;
+        background-color: @c-background;
+        color: @c-error;
+        box-shadow: inset 0 0 0 2px @c-error;
 
         .isPointer &:hover,
         .isTouch &:active {
-            background-color: rgba(#e53935, 0.1);
+            background-color: rgba(@c-error, 0.1);
         }
     }
 
@@ -1044,7 +1049,7 @@ export default Vue.extend({
 
         &.pending {
             background-image: url('~assets/pics/progress/loader.svg');
-            animation: rotating 2s linear infinite;
+            animation: rotating @d-loader linear infinite;
         }
 
         &.none {
@@ -1086,7 +1091,7 @@ export default Vue.extend({
 
     &-info-text-copy,
     &-info-text-generateQRCode {
-        color: #1D98DC;
+        color: @c-primary;
         text-decoration: underline;
         -webkit-appearance: none;
         background-color: transparent;
@@ -1116,7 +1121,7 @@ export default Vue.extend({
 
     &-info-text-scanQRCode {
         margin-top: -3px;
-        color: #222222;
+        color: @c-text-light;
     }
 
     &-info-text-copy {
@@ -1142,7 +1147,7 @@ export default Vue.extend({
         }
 
         &.failure:after {
-            background: #e53935;
+            background: @c-error;
             content: 'Failed';
         }
 
@@ -1153,12 +1158,12 @@ export default Vue.extend({
             padding: 4px;
             font-size: 12px;
             color: white;
-            background: #1D98DC;
+            background: @c-primary;
             border-radius: 4px;
             top: -22px;
             left: 7px;
             white-space: nowrap;
-            animation: fade-tooltip 0.45s linear both;
+            animation: fade-tooltip @d-tooltip linear both;
 
             @keyframes fade-tooltip {
                 0% {

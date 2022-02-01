@@ -130,13 +130,13 @@ export default Vue.extend({
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 3;
+    z-index: @z-wallet-popup;
 
     &-panel {
         position: relative;
-        background: #FFF;
+        background: @c-background;
         border-radius: 20px;
-        box-shadow: 0px 8px 24px rgb(48 55 87 / 12%);
+        box-shadow: 0px 8px 24px @c-panel-shadow;
         box-sizing: border-box;
         padding: 53px 16px 24px 16px;
         width: 260px;
@@ -157,7 +157,7 @@ export default Vue.extend({
             button {
                 position: relative;
                 padding: 0 16px;
-                color: #303757;
+                color: @c-text-light;
                 font-size: 15px;
                 line-height: 56px;
                 font-weight: 700;
@@ -166,8 +166,8 @@ export default Vue.extend({
                 justify-content: space-between;
                 align-items: center;
                 width: 100%;
-                border: 1px solid #ced0d9;
-                background: #edeef2;
+                border: 1px solid @c-provider-border;
+                background: @c-provider-background;
                 border-radius: 16px;
 
                 &[disabled] {
@@ -176,7 +176,7 @@ export default Vue.extend({
 
                 .isPointer &:hover,
                 .isTouch &:active {
-                    color: #1d98dc;
+                    color: @c-primary;
                 }
 
                 em {
@@ -208,10 +208,10 @@ export default Vue.extend({
                     margin-top: 1px;
                     width: 12px;
                     height: 12px;
-                    border: 3px solid #1d98dc;
+                    border: 3px solid @c-primary;
                     border-left: 3px solid transparent;
                     border-radius: 50%;
-                    animation: loading-animation-spin 2s infinite linear;
+                    animation: loading-animation-spin @d-loader infinite linear;
 
                     @keyframes loading-animation-spin {
                         to {
@@ -241,7 +241,7 @@ export default Vue.extend({
         top: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, .25);
+        background: @c-overlay;
     }
 
     &Transition-enter,
@@ -250,7 +250,7 @@ export default Vue.extend({
     }
     &Transition-enter-active,
     &Transition-leave-active, {
-        transition: 0.1s opacity;
+        transition: @d-modal opacity;
     }
     &Transition-enter-to,
     &Transition-leave, {

@@ -19,11 +19,11 @@ export default Vue.extend({})
 @{r} {
     text-align: center;
     font-size: 12px;
-    color: #666666;
+    color: @c-label;
     padding-bottom: 10px;
 
     a {
-        color: #666666;
+        color: @c-label;
         text-decoration: underline;
 
         .isPointer &:hover,

@@ -104,7 +104,7 @@ export default Vue.extend({
 
     body {
         -webkit-text-size-adjust: 100%;
-        color: #303757;
+        color: @c-text-light;
     }
 
     body, input, button {

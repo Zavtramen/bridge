@@ -33,6 +33,11 @@ export default {
         '@/assets/styles/reboot.css'
     ],
 
+    // Global LESS variables
+    styleResources: {
+        less: ['@/assets/styles/variables.less']
+    },
+
     // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
     plugins: [
         { src: '@/plugins/global.helpers.js'},
@@ -45,7 +50,9 @@ export default {
     buildModules: [
         // https://go.nuxtjs.dev/typescript
         '@nuxt/typescript-build',
-        'nuxt-compress'
+        'nuxt-compress',
+        // Doc: https://github.com/nuxt-community/style-resources-module
+        ['@nuxtjs/style-resources']
     ],
 
     // Modules: https://go.nuxtjs.dev/config-modules

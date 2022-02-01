@@ -65,16 +65,16 @@ export default Vue.extend({
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 4;
+    z-index: @z-alert;
     padding: 16px;
 
     &-panel {
         position: relative;
-        background: #FFF;
+        background: @c-background;
         box-sizing: border-box;
         padding: 16px;
         margin: 32px auto;
-        box-shadow: 0px 8px 24px rgba(48, 55, 87, 0.12);
+        box-shadow: 0px 8px 24px @c-panel-shadow;
         border-radius: 12px;
         display: flex;
         flex-direction: column;
@@ -96,7 +96,7 @@ export default Vue.extend({
 
         button {
             align-self: flex-end;
-            color: rgb(51, 144, 236);
+            color: @c-primary;
             font-size: 16px;
             outline: none !important;
             display: flex;
@@ -113,12 +113,12 @@ export default Vue.extend({
             flex-shrink: 0;
             position: relative;
             overflow: hidden;
-            transition: background-color .15s,color .15s;
+            transition: background-color @d-hover, color @d-hover;
             text-decoration: none !important;
 
             .isPointer &:hover,
             .isTouch &:active {
-                background-color: rgba(74, 149, 214, 0.08);
+                background-color: rgba(@c-primary, 0.08);
             }
         }
     }
@@ -129,7 +129,7 @@ export default Vue.extend({
         top: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, .25);
+        background: @c-overlay;
     }
 
     &Transition-enter,
@@ -138,7 +138,7 @@ export default Vue.extend({
     }
     &Transition-enter-active,
     &Transition-leave-active, {
-        transition: 0.1s opacity;
+        transition: @d-modal opacity;
     }
     &Transition-enter-to,
     &Transition-leave, {
