@@ -10,6 +10,13 @@ const i18nOptions = {
             iso: 'en-US',
             file: 'en-US.js',
             class: 'lang-en',
+        },
+        {
+            name: 'Russian',
+            code: 'ru',
+            iso: 'ru',
+            file: 'ru.js',
+            class: 'lang-ru',
         }
     ],
     langDir: 'lang/',
@@ -19,18 +26,16 @@ const i18nOptions = {
     strategy: 'no_prefix',
     routesNameSeparator: '---',
 
-    detectBrowserLanguage: false,
-
-    // detectBrowserLanguage: {
-    //     // If enabled, a cookie is set once a user has been redirected to his
-    //     // preferred language to prevent subsequent redirections
-    //     // Set to false to redirect every time
-    //     useCookie: true,
-    //     // Cookie name
-    //     cookieKey: 'i18n_redirected',
-    //     // Set to always redirect to value stored in the cookie, not just once
-    //     alwaysRedirect: true,
-    // },
+    detectBrowserLanguage: {
+        // If enabled, a cookie is set once a user has been redirected to his
+        // preferred language to prevent subsequent redirections
+        // Set to false to redirect every time
+        useCookie: true,
+        // Cookie name
+        cookieKey: 'i18n_redirected',
+        // Set to always redirect to value stored in the cookie, not just once
+        alwaysRedirect: true,
+    },
 
     seo: false,
     differentDomains: false,

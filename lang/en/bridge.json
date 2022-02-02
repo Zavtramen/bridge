@@ -1,7 +1,7 @@
 {
     "logoLabel": "Bridge",
     "connectWallet": "Connect Wallet",
-    "testnetMessage": "This is the testnet version. ",
+    "testnetMessage": "This is the testnet version",
     "providers": {
         "metamask": "Metamask",
         "walletConnect": "WalletConnect",
@@ -63,7 +63,7 @@
             }
         },
         "bsc": {
-            "currency": "BSC",
+            "currency": "BNB",
             "pageTitle": "TON-BSC Bridge",
             "gasFee": "BSC gas fee ~ <FEE> BNB",
             "transactionCompleted": "BSC transaction completed successfully",
