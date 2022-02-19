@@ -10,7 +10,7 @@ declare module "tonweb" {
     }
 
     declare class HttpProvider {
-        constructor(host?: string)
+        constructor(host?: string, options?: {apiKey: string})
         sendImpl(apiUrl: string, request: any): Promise<any>
         send(method: string, params: any): Promise<any>
         getAddressInfo(address: string): Promise<any>

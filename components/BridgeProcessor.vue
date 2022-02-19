@@ -718,7 +718,7 @@ export default Vue.extend({
                         console.error("Error on newBlockHeaders", error);
                     });
 
-                const tonweb = new TonWeb(new TonWeb.HttpProvider(this.params.tonCenterUrl));
+                const tonweb = new TonWeb(new TonWeb.HttpProvider(this.params.tonCenterUrl, {apiKey: 'ba68682c292bf1ad6150319d94670d36a81313f08fe67592c99e43c8f718d298'}));
 
                 const bridgeData = (await tonweb.provider.call(this.params.tonBridgeAddress, 'get_bridge_data', [])).stack;
 
