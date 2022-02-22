@@ -59,11 +59,11 @@ import Vue from 'vue'
 import Web3 from 'web3';
 import TonWeb from 'tonweb';
 import WTON from '~/assets/WTON.json';
-import { ethers } from "ethers";
-import { Contract } from 'web3-eth-contract';
-import { AbiItem } from 'web3-utils';
+import {ethers} from "ethers";
+import {Contract} from 'web3-eth-contract';
+import {AbiItem} from 'web3-utils';
 import { toUnit, fromUnit, getNumber, getBool, decToHex, parseAddressFromDec } from '~/utils/helpers';
-import { PARAMS } from '~/utils/constants';
+import {PARAMS} from '~/utils/constants';
 
 const BN = TonWeb.utils.BN;
 
@@ -459,30 +459,70 @@ export default Vue.extend({
             const transactions = await this.provider!.tonweb.provider.getTransactions(this.params.tonBridgeAddress, this.lt && this.hash ? 1 : (this.isRecover ? 200 : 40), this.lt || undefined, this.hash || undefined, undefined, this.lt && this.hash ? true : undefined);
             console.log('ton txs', transactions.length);
 
-            const findLogOutMsg = (outMessages?: any[]) => {
+            const findLogOutMsg = (outMessages?: any[]): any => {
                 if (!outMessages) return null;
-                for (let outMsg of outMessages) {
+                for (const outMsg of outMessages) {
                     if (outMsg.destination === '') return outMsg;
                 }
                 return null;
             }
 
-            for (let t of transactions) {
+            const getRawMessageBytes = (logMsg: any): Uint8Array | null => {
+                const message = logMsg.message.substr(0, logMsg.message.length - 1); // remove '\n' from end
+                const bytes = TonWeb.utils.base64ToBytes(message);
+                if (bytes.length !== 28) {
+                  return null;
+                }
+                return bytes;
+            }
+
+            const getTextMessageBytes = (logMsg: any): Uint8Array | null => {
+              const message =  logMsg.msg_data?.text;
+              const textBytes = TonWeb.utils.base64ToBytes(message);
+              const bytes = new Uint8Array(textBytes.length + 4);
+              bytes.set(textBytes, 4);
+              return bytes;
+            }
+
+            const getMessageBytes = (logMsg: any): Uint8Array | null => {
+                const msgType = logMsg.msg_data['@type'];
+                if (msgType === 'msg.dataText') {
+                  return getTextMessageBytes(logMsg);
+                } else if (msgType === 'msg.dataRaw') {
+                  return getRawMessageBytes(logMsg);
+                } else {
+                  console.error('Unknown log msg type ' + msgType);
+                  return null;
+                }
+             }
+
+            for (const t of transactions) {
                 const logMsg = findLogOutMsg(t.out_msgs);
                 if (logMsg) {
                     if (!this.isRecover && !(this.lt && this.hash)) {
                         if (t.utime * 1000 < myCreateTime) continue;
                     }
-
-                    const message = logMsg.message.substr(0, logMsg.message.length - 1); // remove '\n' from end
-                    const bytes = TonWeb.utils.base64ToBytes(message);
-                    if (bytes.length !== 28) {
+                    const bytes = getMessageBytes(logMsg);
+                    if (bytes === null) {
                         continue;
                     }
+
                     const destinationAddress = this.makeAddress('0x' + TonWeb.utils.bytesToHex(bytes.slice(0, 20)));
                     const amountHex = TonWeb.utils.bytesToHex(bytes.slice(20, 28));
                     const amount = new BN(amountHex, 16);
                     const senderAddress = new TonWeb.utils.Address(t.in_msg.source);
+
+                    const addressFromInMsg = t.in_msg.message.slice('swapTo#'.length);
+                    if (destinationAddress.toLowerCase() !== addressFromInMsg.toLowerCase()) {
+                        console.error('address from in_msg doesnt match ', addressFromInMsg, destinationAddress);
+                        continue;
+                    }
+                    const amountFromInMsg = new BN(t.in_msg.value);
+                    const amountFromInMsgAfterFee = amountFromInMsg.sub(this.getFeeAmount(amountFromInMsg));
+                    if (!amount.eq(amountFromInMsgAfterFee)) {
+                        console.error('amount from in_msg doesnt match ', amount.toString(), amountFromInMsgAfterFee.toString(), amountFromInMsg.toString());
+                        continue;
+                    }
 
                     const event: ISwapData = {
                         type: 'SwapTonToEth',
@@ -497,7 +537,7 @@ export default Vue.extend({
                             lt: t.transaction_id.lt,
                         }
                     };
-                    console.log(JSON.stringify(event));
+                   console.log(JSON.stringify(event));
 
                     const myAmountNano = new BN(myAmount * 1e9);
                     const amountAfterFee = myAmountNano.sub(this.getFeeAmount(myAmountNano));
