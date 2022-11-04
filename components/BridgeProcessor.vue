@@ -406,14 +406,14 @@ export default Vue.extend({
         getSwapTonToEthId(web3: any, d: ISwapData): string {
             let encodedParams;
 
-            if (this.pair === 'eth') {
+            if (this.pair === 'eth' && !this.isTestnet) {
                 encodedParams = web3.eth.abi.encodeParameters(
                     ['int', 'address', 'uint256', 'int8', 'bytes32', 'bytes32', 'uint64'],
                     [0xDA7A, d.receiver, d.amount, d.tx.address_.workchain, d.tx.address_.address_hash, d.tx.tx_hash, d.tx.lt]
                 )
             }
 
-            if (this.pair === 'bsc') {
+            if (this.pair === 'bsc' || this.isTestnet) {
                 encodedParams = web3.eth.abi.encodeParameters(
                     ['int', 'address', 'address', 'uint256', 'int8', 'bytes32', 'bytes32', 'uint64'],
                     [0xDA7A, this.params.wTonAddress, d.receiver, d.amount, d.tx.address_.workchain, d.tx.address_.address_hash, d.tx.tx_hash, d.tx.lt]

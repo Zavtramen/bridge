@@ -40,8 +40,8 @@
                 "coinShort": "TONCOIN"
             },
             "test" : {
-                "name": "Ethereum Ropsten",
-                "full": "Ethereum Ropsten",
+                "name": "Ethereum Goerli",
+                "full": "Ethereum Goerli",
                 "coin": "TONCOIN (ERC20)",
                 "coinShort": "TONCOIN"
             }
